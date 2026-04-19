@@ -9,38 +9,134 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as LeadsRouteImport } from './routes/leads'
+import { Route as DocumentacionRouteImport } from './routes/documentacion'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LeadsLeadIdRouteImport } from './routes/leads.$leadId'
 
+const LeadsRoute = LeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocumentacionRoute = DocumentacionRouteImport.update({
+  id: '/documentacion',
+  path: '/documentacion',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalisisIaRoute = AnalisisIaRouteImport.update({
+  id: '/analisis-ia',
+  path: '/analisis-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeadsLeadIdRoute = LeadsLeadIdRouteImport.update({
+  id: '/$leadId',
+  path: '/$leadId',
+  getParentRoute: () => LeadsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analisis-ia': typeof AnalisisIaRoute
+  '/dashboard': typeof DashboardRoute
+  '/documentacion': typeof DocumentacionRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/leads/$leadId': typeof LeadsLeadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analisis-ia': typeof AnalisisIaRoute
+  '/dashboard': typeof DashboardRoute
+  '/documentacion': typeof DocumentacionRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/leads/$leadId': typeof LeadsLeadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analisis-ia': typeof AnalisisIaRoute
+  '/dashboard': typeof DashboardRoute
+  '/documentacion': typeof DocumentacionRoute
+  '/leads': typeof LeadsRouteWithChildren
+  '/leads/$leadId': typeof LeadsLeadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/analisis-ia'
+    | '/dashboard'
+    | '/documentacion'
+    | '/leads'
+    | '/leads/$leadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/analisis-ia'
+    | '/dashboard'
+    | '/documentacion'
+    | '/leads'
+    | '/leads/$leadId'
+  id:
+    | '__root__'
+    | '/'
+    | '/analisis-ia'
+    | '/dashboard'
+    | '/documentacion'
+    | '/leads'
+    | '/leads/$leadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalisisIaRoute: typeof AnalisisIaRoute
+  DashboardRoute: typeof DashboardRoute
+  DocumentacionRoute: typeof DocumentacionRoute
+  LeadsRoute: typeof LeadsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/leads': {
+      id: '/leads'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof LeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/documentacion': {
+      id: '/documentacion'
+      path: '/documentacion'
+      fullPath: '/documentacion'
+      preLoaderRoute: typeof DocumentacionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analisis-ia': {
+      id: '/analisis-ia'
+      path: '/analisis-ia'
+      fullPath: '/analisis-ia'
+      preLoaderRoute: typeof AnalisisIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,12 +144,42 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leads/$leadId': {
+      id: '/leads/$leadId'
+      path: '/$leadId'
+      fullPath: '/leads/$leadId'
+      preLoaderRoute: typeof LeadsLeadIdRouteImport
+      parentRoute: typeof LeadsRoute
+    }
   }
 }
 
+interface LeadsRouteChildren {
+  LeadsLeadIdRoute: typeof LeadsLeadIdRoute
+}
+
+const LeadsRouteChildren: LeadsRouteChildren = {
+  LeadsLeadIdRoute: LeadsLeadIdRoute,
+}
+
+const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalisisIaRoute: AnalisisIaRoute,
+  DashboardRoute: DashboardRoute,
+  DocumentacionRoute: DocumentacionRoute,
+  LeadsRoute: LeadsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
