@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LeadsRouteImport } from './routes/leads'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
@@ -19,6 +20,11 @@ import { Route as LeadsLeadIdRouteImport } from './routes/leads.$leadId'
 const LeadsRoute = LeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocumentacionRoute = DocumentacionRouteImport.update({
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/analisis-ia': typeof AnalisisIaRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
+  '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/analisis-ia': typeof AnalisisIaRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
+  '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/analisis-ia': typeof AnalisisIaRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
+  '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/analisis-ia'
     | '/dashboard'
     | '/documentacion'
+    | '/landing'
     | '/leads'
     | '/leads/$leadId'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/analisis-ia'
     | '/dashboard'
     | '/documentacion'
+    | '/landing'
     | '/leads'
     | '/leads/$leadId'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/analisis-ia'
     | '/dashboard'
     | '/documentacion'
+    | '/landing'
     | '/leads'
     | '/leads/$leadId'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   AnalisisIaRoute: typeof AnalisisIaRoute
   DashboardRoute: typeof DashboardRoute
   DocumentacionRoute: typeof DocumentacionRoute
+  LandingRoute: typeof LandingRoute
   LeadsRoute: typeof LeadsRouteWithChildren
 }
 
@@ -114,6 +127,13 @@ declare module '@tanstack/react-router' {
       path: '/leads'
       fullPath: '/leads'
       preLoaderRoute: typeof LeadsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/documentacion': {
@@ -169,8 +189,18 @@ const rootRouteChildren: RootRouteChildren = {
   AnalisisIaRoute: AnalisisIaRoute,
   DashboardRoute: DashboardRoute,
   DocumentacionRoute: DocumentacionRoute,
+  LandingRoute: LandingRoute,
   LeadsRoute: LeadsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
