@@ -10,7 +10,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
+import { ClosingGauge } from "@/components/ClosingGauge";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
@@ -100,22 +104,19 @@ function DashboardPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" /> Promedio de cierre
           </div>
-          <p className="mt-3 text-3xl font-semibold tracking-tight">12<span className="text-base font-normal text-muted-foreground"> días</span></p>
-          <p className="mt-1 text-xs text-muted-foreground">−2 días vs mes anterior</p>
+          <div className="mt-3">
+            <ClosingGauge value={11} target={8} max={14} />
+          </div>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            −2 días vs mes anterior
+          </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" /> Destinos más consultados
           </div>
-          <ul className="mt-3 space-y-2">
-            {topDestinations.slice(0, 4).map((d) => (
-              <li key={d.name} className="flex items-center justify-between text-sm">
-                <span>{d.name}</span>
-                <span className="text-xs text-muted-foreground">{d.value}%</span>
-              </li>
-            ))}
-          </ul>
+          <DestinationsBarChart />
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
@@ -135,4 +136,78 @@ function DashboardPage() {
       </div>
     </AppShell>
   );
+}
+
+function DestinationsBarChart() {
+  const data = topDestinations.slice(0, 5);
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const highlightIndex = data.findIndex((d) => d.value === maxValue);
+
+  return (
+    <div className="mt-3">
+      <div className="h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 18, right: 4, left: -28, bottom: 0 }} barCategoryGap="28%">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="name"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              interval={0}
+            />
+            <YAxis
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <Tooltip
+              cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+              formatter={(value) => [`${value}%`, "Consultas"]}
+            />
+            <Bar dataKey="value" radius={[20, 20, 20, 20]} label={renderBarLabel(highlightIndex) as any}>
+              {data.map((_, i) => (
+                <Cell
+                  key={i}
+                  fill={i === highlightIndex ? "var(--foreground)" : "var(--muted)"}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function renderBarLabel(highlightIndex: number) {
+  return (props: any) => {
+    const x = Number(props.x ?? 0);
+    const y = Number(props.y ?? 0);
+    const width = Number(props.width ?? 0);
+    const value = props.value ?? 0;
+    const index = props.index ?? -1;
+    if (index !== highlightIndex) return <g />;
+    const cx = x + width / 2;
+    const cy = y - 10;
+    const label = `${value}%`;
+    const w = label.length * 6 + 12;
+    return (
+      <g>
+        <rect x={cx - w / 2} y={cy - 12} width={w} height={18} rx={4} fill="var(--foreground)" />
+        <text x={cx} y={cy + 1} textAnchor="middle" fontSize={10} fontWeight={600} fill="var(--background)">
+          {label}
+        </text>
+      </g>
+    );
+  };
 }
