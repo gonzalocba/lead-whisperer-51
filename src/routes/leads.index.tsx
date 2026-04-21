@@ -5,7 +5,7 @@ import { leads, statusCounts } from "@/lib/mock-data";
 import { Eye, Search } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/leads")({
+export const Route = createFileRoute("/leads/")({
   component: LeadsListPage,
   head: () => ({
     meta: [
