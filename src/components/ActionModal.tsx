@@ -33,8 +33,8 @@ export function ActionModal({
   onClose: () => void;
   onSave: (a: ActionEntry, advance: boolean) => void;
 }) {
-  const [type, setType] = useState(TYPES[0]);
-  const [result, setResult] = useState(RESULTS[0]);
+  const [type, setType] = useState("");
+  const [result, setResult] = useState("");
   const [advance, setAdvance] = useState(false);
   const [note, setNote] = useState("");
 
@@ -49,12 +49,15 @@ export function ActionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!type || !result) return;
     const now = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     const date = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
     onSave({ date, type, result, note: note.trim() || "—" }, advance);
     setNote("");
     setAdvance(false);
+    setType("");
+    setResult("");
   };
 
   return (
@@ -69,50 +72,54 @@ export function ActionModal({
 
         <form onSubmit={handleSubmit} className="space-y-5 p-5">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Tipo de acción</label>
-            <div className="flex flex-wrap gap-1.5">
-              {TYPES.map((t) => (
-                <button
-                  type="button"
-                  key={t}
-                  onClick={() => setType(t)}
-                  className={`rounded-md border px-2.5 py-1.5 text-xs transition ${
-                    type === t
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border bg-background hover:bg-muted"
-                  }`}
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Resultado</label>
+            <label className="text-sm font-medium">Tipo de acción</label>
             <select
-              value={result}
-              onChange={(e) => setResult(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring"
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring"
             >
-              {RESULTS.map((r) => (
-                <option key={r}>{r}</option>
+              <option value="" disabled>Seleccionar...</option>
+              {TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
           </div>
 
-          <label className="flex items-center gap-2.5 rounded-md border border-border bg-muted/30 px-3 py-2.5 text-sm cursor-pointer">
-            <input
-              type="checkbox"
-              checked={advance}
-              onChange={(e) => setAdvance(e.target.checked)}
-              className="h-4 w-4 accent-foreground"
-            />
-            <span>¿Avanzar al siguiente estado del pipeline?</span>
-          </label>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Resultado</label>
+            <select
+              value={result}
+              onChange={(e) => setResult(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring"
+            >
+              <option value="" disabled>Seleccionar...</option>
+              {RESULTS.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">¿Avanzar al siguiente estado?</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={advance}
+              onClick={() => setAdvance((v) => !v)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                advance ? "bg-foreground" : "bg-muted"
+              }`}
+            >
+              <span
+                className={`inline-block h-5 w-5 rounded-full bg-background shadow transition-transform ${
+                  advance ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">Nota (opcional)</label>
+            <label className="text-sm font-medium">Nota</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
