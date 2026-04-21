@@ -1,13 +1,14 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PipelineStepper } from "@/components/PipelineStepper";
 import { ActionModal } from "@/components/ActionModal";
 import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
-import { leads, defaultActions } from "@/lib/mock-data";
+import { leads, defaultActions, pipelineSteps } from "@/lib/mock-data";
 import type { ActionEntry } from "@/lib/mock-data";
-import { ArrowLeft, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import type { LeadStatus } from "@/lib/mock-data";
+import { ArrowLeft, Plus, Sparkles, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/leads/$leadId")({
   loader: ({ params }) => {
@@ -32,22 +33,61 @@ export const Route = createFileRoute("/leads/$leadId")({
 
 function LeadDetailPage() {
   const { lead } = Route.useLoaderData();
+  const navigate = useNavigate();
   const [actions, setActions] = useState<ActionEntry[]>(defaultActions);
   const [modalOpen, setModalOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
+  const [status, setStatus] = useState<LeadStatus>(lead.status);
+  const [search, setSearch] = useState("");
+
+  const matches = useMemo(() => {
+    if (!search.trim()) return [];
+    const q = search.toLowerCase();
+    return leads.filter((l) => l.name.toLowerCase().includes(q)).slice(0, 6);
+  }, [search]);
 
   return (
     <AppShell>
-      <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Volver
-      </Link>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" /> Volver
+        </Link>
+        {/* 3.1 Búsqueda por nombre */}
+        <div className="relative w-full sm:w-72">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Buscar lead por nombre..."
+            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-ring"
+          />
+          {matches.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
+              {matches.map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => {
+                    setSearch("");
+                    navigate({ to: "/leads/$leadId", params: { leadId: m.id } });
+                  }}
+                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
+                >
+                  <span>{m.name}</span>
+                  <span className="text-xs text-muted-foreground">{m.destination}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
 
-      <div className="mt-3 mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      {/* 3.2 Encabezado del lead */}
+      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{lead.name}</h1>
           <p className="text-sm text-muted-foreground">{lead.destination} · {lead.tripType}</p>
         </div>
-        <StatusBadge status={lead.status} />
+        <StatusBadge status={status} />
       </div>
 
       {/* Datos del lead */}
@@ -66,7 +106,7 @@ function LeadDetailPage() {
       {/* Pipeline */}
       <section className="mb-5 rounded-xl border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Estado en pipeline</h2>
-        <PipelineStepper current={lead.status} />
+        <PipelineStepper current={status} />
       </section>
 
       {/* Vendedor */}
@@ -145,8 +185,14 @@ function LeadDetailPage() {
       <ActionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={(a) => {
+        onSave={(a, advance) => {
           setActions((prev) => [a, ...prev]);
+          if (advance) {
+            const idx = pipelineSteps.indexOf(status);
+            if (idx >= 0 && idx < pipelineSteps.length - 1) {
+              setStatus(pipelineSteps[idx + 1]);
+            }
+          }
           setModalOpen(false);
         }}
       />
