@@ -10,7 +10,11 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  BarChart,
+  Bar,
+  Cell,
 } from "recharts";
+import { ClosingGauge } from "@/components/ClosingGauge";
 
 export const Route = createFileRoute("/dashboard")({
   component: DashboardPage,
