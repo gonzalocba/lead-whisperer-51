@@ -106,7 +106,7 @@ function LeadDetailPage() {
       {/* Pipeline */}
       <section className="mb-5 rounded-xl border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Estado en pipeline</h2>
-        <PipelineStepper current={lead.status} />
+        <PipelineStepper current={status} />
       </section>
 
       {/* Vendedor */}
@@ -185,8 +185,14 @@ function LeadDetailPage() {
       <ActionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={(a) => {
+        onSave={(a, advance) => {
           setActions((prev) => [a, ...prev]);
+          if (advance) {
+            const idx = pipelineSteps.indexOf(status);
+            if (idx >= 0 && idx < pipelineSteps.length - 1) {
+              setStatus(pipelineSteps[idx + 1]);
+            }
+          }
           setModalOpen(false);
         }}
       />
