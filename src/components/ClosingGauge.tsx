@@ -52,24 +52,24 @@ export function ClosingGauge({ value, target, max = 14 }: ClosingGaugeProps) {
           strokeWidth={strokeW}
           strokeLinecap="round"
         />
-        {/* Green zone */}
+        {/* Good zone (foreground / dark) */}
         <path
           d={arcPath(0, zone1End)}
           fill="none"
-          stroke="var(--success)"
+          stroke="var(--foreground)"
           strokeWidth={strokeW}
           strokeLinecap="round"
         />
-        {/* Yellow zone */}
+        {/* Warning zone (mid grey) */}
         {zone2End > zone1End && (
           <path
             d={arcPath(zone1End, zone2End)}
             fill="none"
-            stroke="var(--warning)"
+            stroke="var(--muted-foreground)"
             strokeWidth={strokeW}
           />
         )}
-        {/* Red zone */}
+        {/* Danger zone (single accent color) */}
         {zone2End < 180 && (
           <path
             d={arcPath(zone2End, 180)}
@@ -130,7 +130,7 @@ export function ClosingGauge({ value, target, max = 14 }: ClosingGaugeProps) {
           className={`rounded-full px-2.5 py-1 text-xs font-medium ${
             overTarget
               ? "bg-destructive/10 text-destructive"
-              : "bg-success/10 text-success"
+              : "bg-foreground/10 text-foreground"
           }`}
         >
           Real: {value} días
