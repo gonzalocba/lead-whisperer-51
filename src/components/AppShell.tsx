@@ -5,7 +5,7 @@ import { useState } from "react";
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads", label: "Lista Leads", icon: Users },
-  { to: "/leads/1", label: "Perfil Lead", icon: User },
+  { to: "/leads/$leadId", label: "Perfil Lead", icon: User, params: { leadId: "1" } },
   { to: "/analisis-ia", label: "Análisis IA", icon: Sparkles },
   { to: "/documentacion", label: "Documentación", icon: FileText },
 ] as const;
@@ -16,7 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { pathname } = useLocation();
 
   const isActive = (to: string) =>
-    to === "/leads/1" ? pathname.startsWith("/leads/") && pathname !== "/leads" : pathname === to;
+    to === "/leads/$leadId" ? pathname.startsWith("/leads/") && pathname !== "/leads" : pathname === to;
 
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
@@ -48,6 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
+                params={"params" in item ? item.params : undefined}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
                   active

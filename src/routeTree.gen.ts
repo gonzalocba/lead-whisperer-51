@@ -9,19 +9,14 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LeadsIndexRouteImport } from './routes/leads.index'
 import { Route as LeadsLeadIdRouteImport } from './routes/leads.$leadId'
 
-const LeadsRoute = LeadsRouteImport.update({
-  id: '/leads',
-  path: '/leads',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const LandingRoute = LandingRouteImport.update({
   id: '/landing',
   path: '/landing',
@@ -47,6 +42,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LeadsIndexRoute = LeadsIndexRouteImport.update({
+  id: '/leads/',
+  path: '/leads/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeadsLeadIdRoute = LeadsLeadIdRouteImport.update({
   id: '/$leadId',
   path: '/$leadId',
@@ -59,8 +59,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
-  '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
+  '/leads/': typeof LeadsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +68,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
-  '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
+  '/leads': typeof LeadsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +78,8 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
-  '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
+  '/leads/': typeof LeadsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +89,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentacion'
     | '/landing'
-    | '/leads'
     | '/leads/$leadId'
+    | '/leads/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +98,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentacion'
     | '/landing'
-    | '/leads'
     | '/leads/$leadId'
+    | '/leads'
   id:
     | '__root__'
     | '/'
@@ -107,8 +107,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/documentacion'
     | '/landing'
-    | '/leads'
     | '/leads/$leadId'
+    | '/leads/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,18 +117,11 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DocumentacionRoute: typeof DocumentacionRoute
   LandingRoute: typeof LandingRoute
-  LeadsRoute: typeof LeadsRouteWithChildren
+  LeadsIndexRoute: typeof LeadsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/leads': {
-      id: '/leads'
-      path: '/leads'
-      fullPath: '/leads'
-      preLoaderRoute: typeof LeadsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/landing': {
       id: '/landing'
       path: '/landing'
@@ -164,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/leads/': {
+      id: '/leads/'
+      path: '/leads'
+      fullPath: '/leads/'
+      preLoaderRoute: typeof LeadsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/leads/$leadId': {
       id: '/leads/$leadId'
       path: '/$leadId'
@@ -174,23 +174,13 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface LeadsRouteChildren {
-  LeadsLeadIdRoute: typeof LeadsLeadIdRoute
-}
-
-const LeadsRouteChildren: LeadsRouteChildren = {
-  LeadsLeadIdRoute: LeadsLeadIdRoute,
-}
-
-const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalisisIaRoute: AnalisisIaRoute,
   DashboardRoute: DashboardRoute,
   DocumentacionRoute: DocumentacionRoute,
   LandingRoute: LandingRoute,
-  LeadsRoute: LeadsRouteWithChildren,
+  LeadsIndexRoute: LeadsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
