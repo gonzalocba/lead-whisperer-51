@@ -137,3 +137,73 @@ function DashboardPage() {
     </AppShell>
   );
 }
+
+function DestinationsBarChart() {
+  const data = topDestinations.slice(0, 5);
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const highlightIndex = data.findIndex((d) => d.value === maxValue);
+
+  return (
+    <div className="mt-3">
+      <div className="h-44 w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={data} margin={{ top: 18, right: 4, left: -28, bottom: 0 }} barCategoryGap="28%">
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <XAxis
+              dataKey="name"
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              interval={0}
+            />
+            <YAxis
+              stroke="var(--muted-foreground)"
+              fontSize={10}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => `${v}%`}
+            />
+            <Tooltip
+              cursor={{ fill: "var(--muted)", opacity: 0.4 }}
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 12,
+              }}
+              formatter={(value: number) => [`${value}%`, "Consultas"]}
+            />
+            <Bar dataKey="value" radius={[20, 20, 20, 20]} label={renderBarLabel(highlightIndex)}>
+              {data.map((_, i) => (
+                <Cell
+                  key={i}
+                  fill={i === highlightIndex ? "var(--foreground)" : "var(--muted)"}
+                />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+function renderBarLabel(highlightIndex: number) {
+  return (props: { x?: number; y?: number; width?: number; value?: number; index?: number }) => {
+    const { x = 0, y = 0, width = 0, value = 0, index = -1 } = props;
+    if (index !== highlightIndex) return <g />;
+    const cx = x + width / 2;
+    const cy = y - 10;
+    const label = `${value}%`;
+    const w = label.length * 6 + 12;
+    return (
+      <g>
+        <rect x={cx - w / 2} y={cy - 12} width={w} height={18} rx={4} fill="var(--foreground)" />
+        <text x={cx} y={cy + 1} textAnchor="middle" fontSize={10} fontWeight={600} fill="var(--background)">
+          {label}
+        </text>
+      </g>
+    );
+  };
+}
