@@ -2,16 +2,26 @@ import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { ActionEntry } from "@/lib/mock-data";
 
-const TYPES = ["WhatsApp", "Llamada", "Cotización enviada", "Seguimiento", "Reunión"];
+const TYPES = [
+  "Llamada",
+  "WhatsApp",
+  "Email",
+  "Cotización enviada",
+  "Seguimiento",
+  "Recompra",
+];
 const RESULTS = [
-  "Sin respuesta",
+  "No responde",
+  "Responde",
+  "Interesado",
   "Solicita información",
-  "Responde positivo",
-  "Objeción precio",
-  "Objeción fecha",
-  "Objeción indecisión",
+  "Cotización enviada",
+  "En análisis",
+  "Rechazado",
   "Cerrado ganado",
-  "Cerrado perdido",
+  "Recompra interesado",
+  "Recompra no interesado",
+  "Recompra cerrado ganado",
 ];
 
 export function ActionModal({
