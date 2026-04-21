@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { statusCounts, wonVsLostByMonth, topDestinations } from "@/lib/mock-data";
-import { ArrowUpRight, Sparkles, Clock, MapPin } from "lucide-react";
+import { ArrowUpRight, Sparkles, Clock, MapPin, BrainCircuit } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -129,7 +129,11 @@ function DashboardPage() {
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5" /> Análisis IA general
+            <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-md bg-foreground/5 ring-1 ring-border">
+              <BrainCircuit className="h-4 w-4 text-foreground" strokeWidth={1.75} />
+              <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-foreground" strokeWidth={2} />
+            </span>
+            <span className="font-medium text-foreground">Análisis IA general</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed">
             Tu mejor canal sigue siendo <span className="font-medium">WhatsApp</span>. Los leads con respuesta &lt; 1h tienen 3× tasa de cierre.
