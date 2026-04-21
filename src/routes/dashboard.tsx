@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { statusCounts, wonVsLostByMonth, topDestinations } from "@/lib/mock-data";
-import { ArrowUpRight, Sparkles, Clock, MapPin } from "lucide-react";
+import { ArrowUpRight, Sparkles, Clock, MapPin, BrainCircuit } from "lucide-react";
 import {
   ResponsiveContainer,
   AreaChart,
@@ -65,24 +65,32 @@ function DashboardPage() {
             <h2 className="text-sm font-semibold">Cerrados vs Perdidos</h2>
             <p className="text-xs text-muted-foreground">Línea de tiempo · últimos 6 meses</p>
           </div>
-          <span className="text-xs text-muted-foreground">Mensual</span>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-foreground" /> Ganados
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full" style={{ background: "var(--muted-foreground)" }} /> Perdidos
+            </span>
+            <span className="ml-2">Mensual</span>
+          </div>
         </div>
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={wonVsLostByMonth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="oklch(0.66 0.14 150)" stopOpacity={0.35} />
-                  <stop offset="95%" stopColor="oklch(0.66 0.14 150)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--foreground)" stopOpacity={0.22} />
+                  <stop offset="95%" stopColor="var(--foreground)" stopOpacity={0} />
                 </linearGradient>
                 <linearGradient id="g2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="oklch(0.62 0.19 25)" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="oklch(0.62 0.19 25)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--muted-foreground)" stopOpacity={0.18} />
+                  <stop offset="95%" stopColor="var(--muted-foreground)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.004 260)" vertical={false} />
-              <XAxis dataKey="month" stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} axisLine={false} />
               <Tooltip
                 contentStyle={{
                   background: "var(--card)",
@@ -91,8 +99,8 @@ function DashboardPage() {
                   fontSize: 12,
                 }}
               />
-              <Area type="monotone" dataKey="ganados" stroke="oklch(0.66 0.14 150)" fill="url(#g1)" strokeWidth={2} />
-              <Area type="monotone" dataKey="perdidos" stroke="oklch(0.62 0.19 25)" fill="url(#g2)" strokeWidth={2} />
+              <Area type="monotone" dataKey="ganados" stroke="var(--foreground)" fill="url(#g1)" strokeWidth={2} />
+              <Area type="monotone" dataKey="perdidos" stroke="var(--muted-foreground)" fill="url(#g2)" strokeWidth={2} strokeDasharray="4 3" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -121,7 +129,11 @@ function DashboardPage() {
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Sparkles className="h-3.5 w-3.5" /> Análisis IA general
+            <span className="relative inline-flex h-7 w-7 items-center justify-center rounded-md bg-foreground/5 ring-1 ring-border">
+              <BrainCircuit className="h-4 w-4 text-foreground" strokeWidth={1.75} />
+              <Sparkles className="absolute -right-1 -top-1 h-3 w-3 text-foreground" strokeWidth={2} />
+            </span>
+            <span className="font-medium text-foreground">Análisis IA general</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed">
             Tu mejor canal sigue siendo <span className="font-medium">WhatsApp</span>. Los leads con respuesta &lt; 1h tienen 3× tasa de cierre.
