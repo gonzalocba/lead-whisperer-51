@@ -172,9 +172,9 @@ function DestinationsBarChart() {
                 borderRadius: 8,
                 fontSize: 12,
               }}
-              formatter={(value: number) => [`${value}%`, "Consultas"]}
+              formatter={(value) => [`${value}%`, "Consultas"]}
             />
-            <Bar dataKey="value" radius={[20, 20, 20, 20]} label={renderBarLabel(highlightIndex)}>
+            <Bar dataKey="value" radius={[20, 20, 20, 20]} label={renderBarLabel(highlightIndex) as any}>
               {data.map((_, i) => (
                 <Cell
                   key={i}
@@ -190,8 +190,12 @@ function DestinationsBarChart() {
 }
 
 function renderBarLabel(highlightIndex: number) {
-  return (props: { x?: number; y?: number; width?: number; value?: number; index?: number }) => {
-    const { x = 0, y = 0, width = 0, value = 0, index = -1 } = props;
+  return (props: any) => {
+    const x = Number(props.x ?? 0);
+    const y = Number(props.y ?? 0);
+    const width = Number(props.width ?? 0);
+    const value = props.value ?? 0;
+    const index = props.index ?? -1;
     if (index !== highlightIndex) return <g />;
     const cx = x + width / 2;
     const cy = y - 10;
