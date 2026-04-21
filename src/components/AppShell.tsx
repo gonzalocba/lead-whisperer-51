@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { LayoutDashboard, Users, User, Sparkles, FileText, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
+import { SidebarAIChat } from "./SidebarAIChat";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -26,7 +27,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           open ? "translate-x-0" : "-translate-x-full"
         }`}
       >
-        <div className="flex h-14 items-center justify-between px-5 border-b border-sidebar-border">
+        <div className="flex h-full flex-col">
+        <div className="flex h-14 shrink-0 items-center justify-between px-5 border-b border-sidebar-border">
           <Link to="/dashboard" className="flex items-center gap-2 font-semibold tracking-tight">
             <span className="grid h-7 w-7 place-items-center rounded-md bg-primary text-primary-foreground text-xs font-bold">L</span>
             LeadFlow
@@ -40,7 +42,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-0.5 p-3">
+        <nav className="flex shrink-0 flex-col gap-0.5 p-3">
           {items.map((item) => {
             const Icon = item.icon;
             const active = isActive(item.to);
@@ -63,7 +65,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="absolute inset-x-3 bottom-3 border-t border-sidebar-border pt-3">
+        {/* Chat IA — ocupa el espacio libre */}
+        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-2">
+          <SidebarAIChat />
+        </div>
+
+        <div className="shrink-0 px-3 pb-3 pt-2 border-t border-sidebar-border">
           <button
             onClick={() => navigate({ to: "/" })}
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
@@ -71,6 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <LogOut className="h-4 w-4" />
             Cerrar sesión
           </button>
+        </div>
         </div>
       </aside>
 
