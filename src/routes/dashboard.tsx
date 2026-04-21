@@ -104,22 +104,19 @@ function DashboardPage() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Clock className="h-3.5 w-3.5" /> Promedio de cierre
           </div>
-          <p className="mt-3 text-3xl font-semibold tracking-tight">12<span className="text-base font-normal text-muted-foreground"> días</span></p>
-          <p className="mt-1 text-xs text-muted-foreground">−2 días vs mes anterior</p>
+          <div className="mt-3">
+            <ClosingGauge value={11} target={8} max={14} />
+          </div>
+          <p className="mt-3 text-center text-xs text-muted-foreground">
+            −2 días vs mes anterior
+          </p>
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <MapPin className="h-3.5 w-3.5" /> Destinos más consultados
           </div>
-          <ul className="mt-3 space-y-2">
-            {topDestinations.slice(0, 4).map((d) => (
-              <li key={d.name} className="flex items-center justify-between text-sm">
-                <span>{d.name}</span>
-                <span className="text-xs text-muted-foreground">{d.value}%</span>
-              </li>
-            ))}
-          </ul>
+          <DestinationsBarChart />
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
