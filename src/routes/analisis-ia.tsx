@@ -127,11 +127,11 @@ function AIGeneralPage() {
 
       {/* Patrones de oferta */}
       <Block icon={<TrendingUp className="h-4 w-4" />} title="Patrones de oferta">
-        <ul className="grid gap-3 sm:grid-cols-2">
-          <Insight title="Cancún luna de miel" body="Es el segmento con mayor tasa de cierre (62%). Preferencia clara por hoteles 4★ con upgrade premium." />
-          <Insight title="Punta Cana familiar" body="Presupuestos más altos pero ciclos de decisión largos (avg 14 días). Conviene seguimiento estructurado." />
-          <Insight title="Caribe amigos" body="Sensibles al precio: 70% pide 2+ cotizaciones. Mostrar comparativa desde el primer contacto." />
-          <Insight title="México corporativo" body="Volumen bajo pero tickets altos. Contacto telefónico convierte 3× más que WhatsApp." />
+        <ul className="space-y-2.5 text-sm">
+          <Bullet><span className="font-medium">Cancún luna de miel:</span> es el segmento con mayor tasa de cierre (62%). Preferencia clara por hoteles 4★ con upgrade premium.</Bullet>
+          <Bullet><span className="font-medium">Punta Cana familiar:</span> presupuestos más altos pero ciclos de decisión largos (avg 14 días). Conviene seguimiento estructurado.</Bullet>
+          <Bullet><span className="font-medium">Caribe amigos:</span> sensibles al precio. 70% pide 2+ cotizaciones. Mostrar comparativa desde el primer contacto.</Bullet>
+          <Bullet><span className="font-medium">México corporativo:</span> volumen bajo pero tickets altos. Contacto telefónico convierte 3× más que WhatsApp.</Bullet>
         </ul>
       </Block>
 
@@ -155,12 +155,12 @@ function AIGeneralPage() {
 
       {/* Acciones recomendadas */}
       <Block icon={<Sparkles className="h-4 w-4" />} title="Acciones recomendadas">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Action n={1} text="Reactivar los 7 leads dormidos con un mensaje breve y oferta de fecha alternativa." />
-          <Action n={2} text="Sumar plantilla de WhatsApp para luna de miel con dos opciones de presupuesto." />
-          <Action n={3} text="Definir SLA interno de respuesta &lt; 30 minutos en horario comercial." />
-          <Action n={4} text="Probar 1 semana de llamadas en frío para leads corporativos México." />
-        </div>
+        <ul className="space-y-2.5 text-sm">
+          <Bullet>Reactivar los 7 leads dormidos con un mensaje breve y oferta de fecha alternativa.</Bullet>
+          <Bullet>Sumar plantilla de WhatsApp para luna de miel con dos opciones de presupuesto.</Bullet>
+          <Bullet>Definir SLA interno de respuesta &lt; 30 minutos en horario comercial.</Bullet>
+          <Bullet>Probar 1 semana de llamadas en frío para leads corporativos México.</Bullet>
+        </ul>
       </Block>
     </AppShell>
   );
