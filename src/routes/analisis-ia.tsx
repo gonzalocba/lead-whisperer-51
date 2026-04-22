@@ -107,8 +107,9 @@ function AIGeneralPage() {
             <BarChart data={topDestinations} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.004 260)" vertical={false} />
               <XAxis dataKey="name" stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} />
+              <YAxis stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
               <Tooltip
+                formatter={(value: number) => [`${value}%`, "Consultas"]}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
@@ -116,7 +117,9 @@ function AIGeneralPage() {
                   fontSize: 12,
                 }}
               />
-              <Bar dataKey="value" fill="oklch(0.45 0.02 260)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="value" fill="oklch(0.45 0.02 260)" radius={[6, 6, 0, 0]}>
+                <LabelList dataKey="value" position="top" formatter={(v: number) => `${v}%`} fontSize={11} fill="var(--foreground)" />
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
