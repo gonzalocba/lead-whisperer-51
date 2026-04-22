@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PipelineStepper } from "@/components/PipelineStepper";
@@ -7,8 +7,8 @@ import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
 import { leads, defaultActions, pipelineSteps } from "@/lib/mock-data";
 import type { ActionEntry } from "@/lib/mock-data";
 import type { LeadStatus } from "@/lib/mock-data";
-import { ArrowLeft, Plus, Sparkles, Search, Download } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/leads/$leadId")({
   loader: ({ params }) => {
@@ -33,18 +33,10 @@ export const Route = createFileRoute("/leads/$leadId")({
 
 function LeadDetailPage() {
   const { lead } = Route.useLoaderData();
-  const navigate = useNavigate();
   const [actions, setActions] = useState<ActionEntry[]>(defaultActions);
   const [modalOpen, setModalOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [status, setStatus] = useState<LeadStatus>(lead.status);
-  const [search, setSearch] = useState("");
-
-  const matches = useMemo(() => {
-    if (!search.trim()) return [];
-    const q = search.toLowerCase();
-    return leads.filter((l) => l.name.toLowerCase().includes(q)).slice(0, 6);
-  }, [search]);
 
   const handleDownloadProfile = () => {
     const today = new Date().toLocaleDateString("es-AR");
@@ -109,46 +101,27 @@ function LeadDetailPage() {
 
   return (
     <AppShell>
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-4">
         <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
-        {/* 3.1 Búsqueda por nombre */}
-        <div className="relative w-full sm:w-72">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar lead por nombre..."
-            className="w-full rounded-md border border-input bg-background py-2 pl-9 pr-3 text-sm outline-none focus:border-ring"
-          />
-          {matches.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full overflow-hidden rounded-md border border-border bg-popover shadow-md">
-              {matches.map((m) => (
-                <button
-                  key={m.id}
-                  onClick={() => {
-                    setSearch("");
-                    navigate({ to: "/leads/$leadId", params: { leadId: m.id } });
-                  }}
-                  className="flex w-full items-center justify-between px-3 py-2 text-left text-sm hover:bg-muted"
-                >
-                  <span>{m.name}</span>
-                  <span className="text-xs text-muted-foreground">{m.destination}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* 3.2 Encabezado del lead */}
-      <div className="mb-6 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{lead.name}</h1>
           <p className="text-sm text-muted-foreground">{lead.destination} · {lead.tripType}</p>
         </div>
-        <StatusBadge status={status} />
+        <div className="flex items-center gap-3">
+          <StatusBadge status={status} />
+          <button
+            onClick={handleDownloadProfile}
+            className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
+          >
+            <Download className="h-4 w-4" /> Descargar perfil PDF
+          </button>
+        </div>
       </div>
 
       {/* Datos del lead */}
@@ -199,12 +172,6 @@ function LeadDetailPage() {
           className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
         >
           <Sparkles className="h-4 w-4" /> {showAI ? "Ocultar análisis IA" : "Analizar con IA"}
-        </button>
-        <button
-          onClick={handleDownloadProfile}
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:ml-auto"
-        >
-          <Download className="h-4 w-4" /> Descargar perfil PDF
         </button>
       </div>
 
