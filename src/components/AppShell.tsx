@@ -65,8 +65,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        {/* Chat IA — ocupa el espacio libre */}
-        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-2">
+        {/* Chat IA — separado del menú con margen y borde superior */}
+        <div className="min-h-0 flex-1 overflow-hidden px-3 pb-2 pt-4 mt-4 border-t border-sidebar-border">
           <SidebarAIChat />
         </div>
 
