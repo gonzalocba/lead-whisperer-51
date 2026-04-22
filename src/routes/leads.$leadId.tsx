@@ -7,7 +7,7 @@ import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
 import { leads, defaultActions, pipelineSteps } from "@/lib/mock-data";
 import type { ActionEntry } from "@/lib/mock-data";
 import type { LeadStatus } from "@/lib/mock-data";
-import { ArrowLeft, Plus, Sparkles, Search } from "lucide-react";
+import { ArrowLeft, Plus, Sparkles, Search, Download } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/leads/$leadId")({
@@ -45,6 +45,67 @@ function LeadDetailPage() {
     const q = search.toLowerCase();
     return leads.filter((l) => l.name.toLowerCase().includes(q)).slice(0, 6);
   }, [search]);
+
+  const handleDownloadProfile = () => {
+    const today = new Date().toLocaleDateString("es-AR");
+    const lines: string[] = [];
+    lines.push("PERFIL DE LEAD — LeadFlow");
+    lines.push("==========================");
+    lines.push(`Generado: ${today}`);
+    lines.push("");
+    lines.push("ENCABEZADO");
+    lines.push("----------");
+    lines.push(`Nombre: ${lead.name}`);
+    lines.push(`Destino: ${lead.destination}`);
+    lines.push(`Tipo de viaje: ${lead.tripType}`);
+    lines.push(`Estado actual: ${status}`);
+    lines.push(`Vendedor asignado: ${lead.assignedTo}`);
+    lines.push("");
+    lines.push("DATOS DEL LEAD");
+    lines.push("--------------");
+    lines.push(`WhatsApp: ${lead.whatsapp}`);
+    lines.push(`Pasajeros: ${lead.passengers}`);
+    lines.push(`Fecha estimada: ${lead.estimatedDate}`);
+    lines.push(`Presupuesto: ${lead.budget}`);
+    lines.push("");
+    lines.push("HISTORIAL DE ACCIONES");
+    lines.push("---------------------");
+    if (actions.length === 0) {
+      lines.push("(sin acciones registradas)");
+    } else {
+      actions.forEach((a) => {
+        lines.push(`• ${a.date} — ${a.type} → ${a.result}${a.note ? ` | Nota: ${a.note}` : ""}`);
+      });
+    }
+    lines.push("");
+    lines.push("ANÁLISIS IA");
+    lines.push("-----------");
+    lines.push("Diagnóstico:");
+    lines.push("El lead muestra interés genuino: respondió positivamente al primer contacto y solicitó cotización. Sin embargo, lleva 1 día sin actividad tras el último mensaje. El presupuesto declarado es ajustado para luna de miel en Cancún en temporada alta de agosto.");
+    lines.push("");
+    lines.push("Objeciones detectadas:");
+    lines.push("• Posible objeción de precio: el rango $1.000–$2.000 USD puede ser insuficiente para 2 pasajeros en agosto. Conviene validar expectativas antes de enviar cotización.");
+    lines.push("• Sin objeción de fecha detectada aún.");
+    lines.push("");
+    lines.push("Señales de interés:");
+    lines.push("• Respondió positivo en el primer contacto.");
+    lines.push("• Especificó tipo de viaje (luna de miel): hay motivación emocional, no solo precio.");
+    lines.push("• Fecha definida (agosto 2026): tiene urgencia real.");
+    lines.push("");
+    lines.push("Estrategia recomendada:");
+    lines.push("Enviar cotización hoy con dos opciones: una dentro de su presupuesto (hotel 4 estrellas) y una opción premium con diferencia de precio clara. El anclaje emocional de luna de miel facilita el upgrade.");
+    lines.push("");
+    lines.push("Mensaje sugerido:");
+    lines.push('"Te armé dos opciones para que elijas según lo que más se ajuste. La segunda incluye detalles especiales para luna de miel que suelen valer la pena..."');
+
+    const safe = lines.join("\n").replace(/[<>&]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;" }[c]!));
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>Perfil — ${lead.name}</title>
+<style>body{font-family:-apple-system,Segoe UI,Inter,sans-serif;padding:40px;color:#111;line-height:1.55;max-width:780px;margin:auto;}pre{white-space:pre-wrap;font-family:inherit;font-size:13px;}@media print{body{padding:20px;}}</style>
+</head><body><pre>${safe}</pre>
+<script>window.onload=()=>setTimeout(()=>window.print(),250);</script></body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
+  };
 
   return (
     <AppShell>
@@ -126,7 +187,7 @@ function LeadDetailPage() {
       </section>
 
       {/* Action buttons */}
-      <div className="mb-5 flex flex-col gap-2 sm:flex-row">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
         <button
           onClick={() => setModalOpen(true)}
           className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
@@ -138,6 +199,12 @@ function LeadDetailPage() {
           className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
         >
           <Sparkles className="h-4 w-4" /> {showAI ? "Ocultar análisis IA" : "Analizar con IA"}
+        </button>
+        <button
+          onClick={handleDownloadProfile}
+          className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:ml-auto"
+        >
+          <Download className="h-4 w-4" /> Descargar perfil PDF
         </button>
       </div>
 
