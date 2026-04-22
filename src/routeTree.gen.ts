@@ -16,7 +16,6 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LeadsIndexRouteImport } from './routes/leads.index'
-import { Route as LeadsPerfilRouteImport } from './routes/leads.perfil'
 import { Route as LeadsLeadIdRouteImport } from './routes/leads.$leadId'
 
 const LeadsRoute = LeadsRouteImport.update({
@@ -54,11 +53,6 @@ const LeadsIndexRoute = LeadsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LeadsRoute,
 } as any)
-const LeadsPerfilRoute = LeadsPerfilRouteImport.update({
-  id: '/perfil',
-  path: '/perfil',
-  getParentRoute: () => LeadsRoute,
-} as any)
 const LeadsLeadIdRoute = LeadsLeadIdRouteImport.update({
   id: '/$leadId',
   path: '/$leadId',
@@ -73,7 +67,6 @@ export interface FileRoutesByFullPath {
   '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
-  '/leads/perfil': typeof LeadsPerfilRoute
   '/leads/': typeof LeadsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -83,7 +76,6 @@ export interface FileRoutesByTo {
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
   '/leads/$leadId': typeof LeadsLeadIdRoute
-  '/leads/perfil': typeof LeadsPerfilRoute
   '/leads': typeof LeadsIndexRoute
 }
 export interface FileRoutesById {
@@ -95,7 +87,6 @@ export interface FileRoutesById {
   '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
-  '/leads/perfil': typeof LeadsPerfilRoute
   '/leads/': typeof LeadsIndexRoute
 }
 export interface FileRouteTypes {
@@ -108,7 +99,6 @@ export interface FileRouteTypes {
     | '/landing'
     | '/leads'
     | '/leads/$leadId'
-    | '/leads/perfil'
     | '/leads/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -118,7 +108,6 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/landing'
     | '/leads/$leadId'
-    | '/leads/perfil'
     | '/leads'
   id:
     | '__root__'
@@ -129,7 +118,6 @@ export interface FileRouteTypes {
     | '/landing'
     | '/leads'
     | '/leads/$leadId'
-    | '/leads/perfil'
     | '/leads/'
   fileRoutesById: FileRoutesById
 }
@@ -193,13 +181,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadsIndexRouteImport
       parentRoute: typeof LeadsRoute
     }
-    '/leads/perfil': {
-      id: '/leads/perfil'
-      path: '/perfil'
-      fullPath: '/leads/perfil'
-      preLoaderRoute: typeof LeadsPerfilRouteImport
-      parentRoute: typeof LeadsRoute
-    }
     '/leads/$leadId': {
       id: '/leads/$leadId'
       path: '/$leadId'
@@ -212,13 +193,11 @@ declare module '@tanstack/react-router' {
 
 interface LeadsRouteChildren {
   LeadsLeadIdRoute: typeof LeadsLeadIdRoute
-  LeadsPerfilRoute: typeof LeadsPerfilRoute
   LeadsIndexRoute: typeof LeadsIndexRoute
 }
 
 const LeadsRouteChildren: LeadsRouteChildren = {
   LeadsLeadIdRoute: LeadsLeadIdRoute,
-  LeadsPerfilRoute: LeadsPerfilRoute,
   LeadsIndexRoute: LeadsIndexRoute,
 }
 
