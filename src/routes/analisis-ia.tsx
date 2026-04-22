@@ -109,7 +109,7 @@ function AIGeneralPage() {
               <XAxis dataKey="name" stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} />
               <YAxis stroke="oklch(0.52 0.01 260)" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
               <Tooltip
-                formatter={(value: number) => [`${value}%`, "Consultas"]}
+                formatter={(value) => [`${value}%`, "Consultas"]}
                 contentStyle={{
                   background: "var(--card)",
                   border: "1px solid var(--border)",
@@ -118,7 +118,7 @@ function AIGeneralPage() {
                 }}
               />
               <Bar dataKey="value" fill="oklch(0.45 0.02 260)" radius={[6, 6, 0, 0]}>
-                <LabelList dataKey="value" position="top" formatter={(v: number) => `${v}%`} fontSize={11} fill="var(--foreground)" />
+                <LabelList dataKey="value" position="top" formatter={(v) => `${v}%`} fontSize={11} fill="var(--foreground)" />
               </Bar>
             </BarChart>
           </ResponsiveContainer>
