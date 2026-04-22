@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { PipelineStepper } from "@/components/PipelineStepper";
@@ -7,8 +7,8 @@ import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
 import { leads, defaultActions, pipelineSteps } from "@/lib/mock-data";
 import type { ActionEntry } from "@/lib/mock-data";
 import type { LeadStatus } from "@/lib/mock-data";
-import { ArrowLeft, Plus, Sparkles, Search, Download } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/leads/$leadId")({
   loader: ({ params }) => {
