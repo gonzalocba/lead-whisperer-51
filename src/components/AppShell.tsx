@@ -58,7 +58,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.to}
                 to={item.to}
-                params={"params" in item ? item.params : undefined}
                 onClick={() => setOpen(false)}
                 className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors ${
                   active

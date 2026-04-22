@@ -173,12 +173,6 @@ function LeadDetailPage() {
         >
           <Sparkles className="h-4 w-4" /> {showAI ? "Ocultar análisis IA" : "Analizar con IA"}
         </button>
-        <button
-          onClick={handleDownloadProfile}
-          className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted sm:ml-auto"
-        >
-          <Download className="h-4 w-4" /> Descargar perfil PDF
-        </button>
       </div>
 
       {/* Historial */}
