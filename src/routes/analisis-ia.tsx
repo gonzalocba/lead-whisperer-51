@@ -187,29 +187,11 @@ function Block({ icon, title, children }: { icon: React.ReactNode; title: string
   );
 }
 
-function Insight({ title, body }: { title: string; body: string }) {
-  return (
-    <li className="rounded-lg border border-border p-3.5">
-      <p className="text-sm font-medium">{title}</p>
-      <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{body}</p>
-    </li>
-  );
-}
-
 function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <li className="flex gap-2.5 leading-relaxed">
       <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-foreground" />
       <span>{children}</span>
     </li>
-  );
-}
-
-function Action({ n, text }: { n: number; text: string }) {
-  return (
-    <div className="flex gap-3 rounded-lg border border-border p-3.5">
-      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground text-xs font-semibold">{n}</span>
-      <p className="text-sm leading-relaxed">{text}</p>
-    </div>
   );
 }
