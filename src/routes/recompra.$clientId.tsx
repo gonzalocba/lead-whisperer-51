@@ -9,7 +9,7 @@ import type { RecompraAction, RecompraStatus } from "@/lib/recompra-data";
 import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
 import { useState } from "react";
 
-export const Route = createFileRoute("/recompra/")({
+export const Route = createFileRoute("/recompra/$clientId")({
   loader: ({ params }) => {
     const client = recompraClients.find((c) => c.id === params.clientId);
     if (!client) throw notFound();
