@@ -1,11 +1,12 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { LayoutDashboard, Users, Sparkles, FileText, LogOut, Menu, X } from "lucide-react";
+import { LayoutDashboard, Users, Sparkles, FileText, LogOut, Menu, X, RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { SidebarAIChat } from "./SidebarAIChat";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/leads", label: "Lista Leads", icon: Users },
+  { to: "/recompra", label: "Recompra", icon: RotateCcw },
   { to: "/analisis-ia", label: "Análisis IA", icon: Sparkles },
   { to: "/documentacion", label: "Documentación", icon: FileText },
 ] as const;
@@ -19,6 +20,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (to === "/leads") {
       // Activo en la lista y también cuando se visualiza un lead específico
       return pathname === "/leads" || /^\/leads\/[^/]+$/.test(pathname);
+    }
+    if (to === "/recompra") {
+      return pathname === "/recompra" || /^\/recompra\/[^/]+$/.test(pathname);
     }
     return pathname === to;
   };

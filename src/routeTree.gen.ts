@@ -9,15 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as RecompraRouteImport } from './routes/recompra'
 import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RecompraIndexRouteImport } from './routes/recompra.index'
 import { Route as LeadsIndexRouteImport } from './routes/leads.index'
 import { Route as LeadsLeadIdRouteImport } from './routes/leads.$leadId'
 
+const RecompraRoute = RecompraRouteImport.update({
+  id: '/recompra',
+  path: '/recompra',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LeadsRoute = LeadsRouteImport.update({
   id: '/leads',
   path: '/leads',
@@ -48,6 +55,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RecompraIndexRoute = RecompraIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => RecompraRoute,
+} as any)
 const LeadsIndexRoute = LeadsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -66,8 +78,10 @@ export interface FileRoutesByFullPath {
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
+  '/recompra': typeof RecompraRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
   '/leads/': typeof LeadsIndexRoute
+  '/recompra/': typeof RecompraIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -77,6 +91,7 @@ export interface FileRoutesByTo {
   '/landing': typeof LandingRoute
   '/leads/$leadId': typeof LeadsLeadIdRoute
   '/leads': typeof LeadsIndexRoute
+  '/recompra': typeof RecompraIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -86,8 +101,10 @@ export interface FileRoutesById {
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
   '/leads': typeof LeadsRouteWithChildren
+  '/recompra': typeof RecompraRouteWithChildren
   '/leads/$leadId': typeof LeadsLeadIdRoute
   '/leads/': typeof LeadsIndexRoute
+  '/recompra/': typeof RecompraIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,8 +115,10 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/landing'
     | '/leads'
+    | '/recompra'
     | '/leads/$leadId'
     | '/leads/'
+    | '/recompra/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -109,6 +128,7 @@ export interface FileRouteTypes {
     | '/landing'
     | '/leads/$leadId'
     | '/leads'
+    | '/recompra'
   id:
     | '__root__'
     | '/'
@@ -117,8 +137,10 @@ export interface FileRouteTypes {
     | '/documentacion'
     | '/landing'
     | '/leads'
+    | '/recompra'
     | '/leads/$leadId'
     | '/leads/'
+    | '/recompra/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -128,10 +150,18 @@ export interface RootRouteChildren {
   DocumentacionRoute: typeof DocumentacionRoute
   LandingRoute: typeof LandingRoute
   LeadsRoute: typeof LeadsRouteWithChildren
+  RecompraRoute: typeof RecompraRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/recompra': {
+      id: '/recompra'
+      path: '/recompra'
+      fullPath: '/recompra'
+      preLoaderRoute: typeof RecompraRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/leads': {
       id: '/leads'
       path: '/leads'
@@ -174,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/recompra/': {
+      id: '/recompra/'
+      path: '/'
+      fullPath: '/recompra/'
+      preLoaderRoute: typeof RecompraIndexRouteImport
+      parentRoute: typeof RecompraRoute
+    }
     '/leads/': {
       id: '/leads/'
       path: '/'
@@ -203,6 +240,18 @@ const LeadsRouteChildren: LeadsRouteChildren = {
 
 const LeadsRouteWithChildren = LeadsRoute._addFileChildren(LeadsRouteChildren)
 
+interface RecompraRouteChildren {
+  RecompraIndexRoute: typeof RecompraIndexRoute
+}
+
+const RecompraRouteChildren: RecompraRouteChildren = {
+  RecompraIndexRoute: RecompraIndexRoute,
+}
+
+const RecompraRouteWithChildren = RecompraRoute._addFileChildren(
+  RecompraRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalisisIaRoute: AnalisisIaRoute,
@@ -210,6 +259,7 @@ const rootRouteChildren: RootRouteChildren = {
   DocumentacionRoute: DocumentacionRoute,
   LandingRoute: LandingRoute,
   LeadsRoute: LeadsRouteWithChildren,
+  RecompraRoute: RecompraRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
