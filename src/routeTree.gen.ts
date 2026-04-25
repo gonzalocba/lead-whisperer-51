@@ -14,7 +14,6 @@ import { Route as LeadsRouteImport } from './routes/leads'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DocumentacionRouteImport } from './routes/documentacion'
 import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CentroAccionesRouteImport } from './routes/centro-acciones'
 import { Route as AnalisisIaRouteImport } from './routes/analisis-ia'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecompraIndexRouteImport } from './routes/recompra.index'
@@ -45,11 +44,6 @@ const DocumentacionRoute = DocumentacionRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CentroAccionesRoute = CentroAccionesRouteImport.update({
-  id: '/centro-acciones',
-  path: '/centro-acciones',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AnalisisIaRoute = AnalisisIaRouteImport.update({
@@ -86,7 +80,6 @@ const LeadsLeadIdRoute = LeadsLeadIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/analisis-ia': typeof AnalisisIaRoute
-  '/centro-acciones': typeof CentroAccionesRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
@@ -100,7 +93,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/analisis-ia': typeof AnalisisIaRoute
-  '/centro-acciones': typeof CentroAccionesRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
@@ -113,7 +105,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/analisis-ia': typeof AnalisisIaRoute
-  '/centro-acciones': typeof CentroAccionesRoute
   '/dashboard': typeof DashboardRoute
   '/documentacion': typeof DocumentacionRoute
   '/landing': typeof LandingRoute
@@ -129,7 +120,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/analisis-ia'
-    | '/centro-acciones'
     | '/dashboard'
     | '/documentacion'
     | '/landing'
@@ -143,7 +133,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/analisis-ia'
-    | '/centro-acciones'
     | '/dashboard'
     | '/documentacion'
     | '/landing'
@@ -155,7 +144,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/analisis-ia'
-    | '/centro-acciones'
     | '/dashboard'
     | '/documentacion'
     | '/landing'
@@ -170,7 +158,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AnalisisIaRoute: typeof AnalisisIaRoute
-  CentroAccionesRoute: typeof CentroAccionesRoute
   DashboardRoute: typeof DashboardRoute
   DocumentacionRoute: typeof DocumentacionRoute
   LandingRoute: typeof LandingRoute
@@ -213,13 +200,6 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/centro-acciones': {
-      id: '/centro-acciones'
-      path: '/centro-acciones'
-      fullPath: '/centro-acciones'
-      preLoaderRoute: typeof CentroAccionesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/analisis-ia': {
@@ -296,7 +276,6 @@ const RecompraRouteWithChildren = RecompraRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AnalisisIaRoute: AnalisisIaRoute,
-  CentroAccionesRoute: CentroAccionesRoute,
   DashboardRoute: DashboardRoute,
   DocumentacionRoute: DocumentacionRoute,
   LandingRoute: LandingRoute,
