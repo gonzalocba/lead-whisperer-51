@@ -39,6 +39,8 @@ interface ActionItem {
   listHref: string;
   /** Contexto mínimo (1 línea) */
   context?: string;
+  /** Recuento opcional para mostrar junto al link secundario */
+  count?: number;
 }
 
 const priorityMeta: Record<Priority, { bar: string; ring: string }> = {
@@ -59,71 +61,80 @@ const priorityMeta: Record<Priority, { bar: string; ring: string }> = {
 const urgentes: ActionItem[] = [
   {
     title: "Contactar 5 leads sin respuesta",
-    primaryLabel: "Enviar mensajes por WhatsApp",
+    primaryLabel: "Enviar mensajes ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "+30% recuperación estimada",
+    count: 5,
+    context: "Recupera ~2 de 5 leads",
   },
   {
     title: "Resolver 3 follow-ups vencidos",
-    primaryLabel: "Enviar mensaje de seguimiento",
+    primaryLabel: "Enviar mensajes ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "Evita pérdida de oportunidades",
+    count: 3,
+    context: "Evita perder 3 oportunidades hoy",
   },
   {
     title: "Contactar 4 clientes para recompra",
-    primaryLabel: "Enviar mensajes por WhatsApp",
+    primaryLabel: "Enviar mensajes ahora",
     secondaryLabel: "Ver clientes",
     listHref: "/recompra",
-    context: "Ticket promedio: $1.8k",
+    count: 4,
+    context: "Ticket promedio recompra: $1.8k",
   },
 ];
 
 const oportunidades: ActionItem[] = [
   {
     title: "Reactivar 6 leads en negociación",
-    primaryLabel: "Enviar mensaje de cierre",
+    primaryLabel: "Generar mensajes para revisar",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "Alta probabilidad de cierre",
+    count: 6,
+    context: "Alta probabilidad de cierre esta semana",
   },
   {
     title: "Contactar 3 leads de alto valor",
-    primaryLabel: "Agendar llamada",
+    primaryLabel: "Agendar llamada ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "Mayor impacto en revenue",
+    count: 3,
+    context: "Impacto alto en revenue mensual",
   },
   {
     title: "Activar 4 leads con alta intención",
-    primaryLabel: "Enviar propuesta por WhatsApp",
+    primaryLabel: "Enviar mensajes ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "Tasa de cierre histórica: 42%",
+    count: 4,
+    context: "Cierran ~2 de cada 4 (histórico 42%)",
   },
 ];
 
 const escala: ActionItem[] = [
   {
     title: "Lanzar recompra a 7 clientes",
-    primaryLabel: "Enviar campaña de recompra",
+    primaryLabel: "Enviar campaña ahora",
     secondaryLabel: "Ver clientes",
     listHref: "/recompra",
-    context: "Conversión estimada: 18%",
+    count: 7,
+    context: "Conversión estimada: ~1 de 7",
   },
   {
     title: "Contactar 10 leads interesados en Cancún",
-    primaryLabel: "Enviar campaña por destino",
+    primaryLabel: "Enviar campaña ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
-    context: "Mensaje segmentado por destino",
+    count: 10,
+    context: "Segmentado por destino Cancún",
   },
   {
     title: "Reactivar 8 leads dormidos",
-    primaryLabel: "Enviar campaña de reactivación",
+    primaryLabel: "Enviar campaña ahora",
     secondaryLabel: "Ver leads",
     listHref: "/leads",
+    count: 8,
     context: "Recupera ~12% del pipeline frío",
   },
 ];
@@ -143,12 +154,16 @@ function ActionCard({ item, priority }: { item: ActionItem; priority: Priority }
       className={`relative overflow-hidden border transition-colors ${p.ring} flex flex-col`}
     >
       <span className={`absolute left-0 top-0 h-full w-1 ${p.bar}`} aria-hidden />
-      <CardHeader className="pb-3 pl-6">
-        <CardTitle className="text-base leading-snug">{item.title}</CardTitle>
+      <CardHeader className="pb-4 pl-7 pr-5 pt-5">
+        <CardTitle className="text-[15px] font-semibold leading-snug tracking-tight">
+          {item.title}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="pl-6 pt-0 flex flex-col gap-3 flex-1">
+      <CardContent className="pl-7 pr-5 pb-5 pt-0 flex flex-col gap-4 flex-1">
         <Button
-          className="w-full justify-center"
+          size="sm"
+          variant="secondary"
+          className="w-full justify-center h-9 font-medium"
           onClick={() => toast.success(item.primaryLabel)}
         >
           {item.primaryLabel}
@@ -159,9 +174,12 @@ function ActionCard({ item, priority }: { item: ActionItem; priority: Priority }
             className="text-primary hover:underline font-medium"
           >
             {item.secondaryLabel}
+            {typeof item.count === "number" ? ` (${item.count})` : ""} →
           </Link>
           {item.context ? (
-            <span className="text-muted-foreground">{item.context}</span>
+            <span className="text-muted-foreground text-right truncate ml-3">
+              {item.context}
+            </span>
           ) : null}
         </div>
       </CardContent>
@@ -191,7 +209,7 @@ function Section({
         <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
         <span className="text-sm text-muted-foreground">— {subtitle}</span>
       </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {items.map((it) => (
           <ActionCard key={it.title} item={it} priority={priority} />
         ))}
