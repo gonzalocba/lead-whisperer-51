@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
-import { leads, statusCounts } from "@/lib/mock-data";
-import { Eye, Search } from "lucide-react";
-import { useState } from "react";
+import { supabase } from "@/lib/supabase";
+import { Lead } from "@/lib/mock-data";
+import { Eye, Search, Loader2, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/leads/")({
   component: LeadsListPage,
@@ -29,12 +30,78 @@ const STATUS_FILTERS = [
 function LeadsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [search, setSearch] = useState("");
+  const [leadsData, setLeadsData] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filtered = leads.filter((l) => {
+  useEffect(() => {
+    async function fetchLeads() {
+      try {
+        const { data, error } = await supabase.from('leads').select('*');
+        if (error) throw error;
+        
+        if (data) {
+          const mapEstado = (id: any) => {
+            if (typeof id === 'string' && isNaN(Number(id))) return id;
+            switch(Number(id)) {
+              case 1: return 'Nuevo';
+              case 2: return 'Contactado';
+              case 3: return 'En negociación'; // mapeado desde 'seguimiento'
+              case 4: return 'Cerrado ganado'; // mapeado desde 'cerrado'
+              case 5: return 'Cerrado perdido'; // mapeado desde 'perdido'
+              default: return 'Nuevo';
+            }
+          };
+
+          const mapped: Lead[] = data.map((d: any) => ({
+            id: d.id_lead || d.id || String(Math.random()),
+            name: d.nombre || d.name || 'Sin nombre',
+            destination: d.destino || d.destination || (d.id_servicio ? `Servicio #${d.id_servicio}` : 'Desconocido'),
+            status: mapEstado(d.id_estado || d.estado || d.status),
+            daysInPipeline: d.dias_pipeline || d.daysInPipeline || 0,
+            whatsapp: d.contacto || d.whatsapp || '',
+            tripType: d.tipo_viaje || d.tripType || '',
+            passengers: d.pasajeros || d.passengers || 1,
+            estimatedDate: d.fecha_estimada || d.estimatedDate || '',
+            budget: d.presupuesto || d.budget || '',
+            assignedTo: d.vendedor || d.assignedTo || ''
+          }));
+          setLeadsData(mapped);
+        }
+      } catch (err: any) {
+        console.error("Error fetching leads:", err);
+        setError(err.message || 'Error al cargar leads');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchLeads();
+  }, []);
+
+  const filtered = leadsData.filter((l) => {
     const matchStatus = statusFilter === "Todos" || l.status === statusFilter;
     const matchName = l.name.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchName;
   });
+
+  const dynamicStatusCounts = leadsData.reduce((acc, lead) => {
+    let key = lead.status;
+    if (lead.status === 'Nuevo') key = 'Nuevos';
+    else if (lead.status === 'Contactado') key = 'Contactados';
+    else if (lead.status === 'Cerrado ganado' || lead.status === 'Cerrado perdido') key = 'Cerrados';
+    
+    acc[key] = (acc[key] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusCounts = {
+    Nuevos: dynamicStatusCounts['Nuevos'] || 0,
+    Contactados: dynamicStatusCounts['Contactados'] || 0,
+    "En negociación": dynamicStatusCounts['En negociación'] || 0,
+    Cerrados: dynamicStatusCounts['Cerrados'] || 0,
+    Recompra: dynamicStatusCounts['Recompra'] || 0,
+  };
 
   return (
     <AppShell>
@@ -42,6 +109,23 @@ function LeadsListPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
         <p className="text-sm text-muted-foreground">Todos los contactos que entraron por la landing.</p>
       </div>
+
+      {isLoading && (
+        <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-2 text-sm">Cargando leads...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="mb-4 rounded-xl border border-destructive/50 bg-destructive/10 p-4 text-destructive flex items-center gap-3">
+          <AlertCircle className="h-5 w-5" />
+          <p className="text-sm">{error}</p>
+        </div>
+      )}
+
+      {!isLoading && !error && (
+        <>
 
       {/* Status chips */}
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
@@ -137,6 +221,8 @@ function LeadsListPage() {
         <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
           No hay leads que coincidan con los filtros.
         </div>
+      )}
+      </>
       )}
     </AppShell>
   );
