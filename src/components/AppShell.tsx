@@ -5,7 +5,7 @@ import { SidebarAIChat } from "./SidebarAIChat";
 
 const items = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/centro-acciones", label: "Centro de acciones", icon: ListChecks },
+  { to: "/segmentos", label: "Segmentos", icon: ListChecks },
   { to: "/leads", label: "Lista Leads", icon: Users },
   { to: "/recompra", label: "Recompra", icon: RotateCcw },
   { to: "/analisis-ia", label: "Análisis IA", icon: Sparkles },

@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { supabase } from "@/lib/supabase";
 
-export const Route = createFileRoute("/centro-acciones")({
+export const Route = createFileRoute("/segmentos")({
   loader: async () => {
     // 1. Traer data de la BD
     const [{ data: leads }, { data: acciones }] = await Promise.all([
@@ -88,7 +88,7 @@ export const Route = createFileRoute("/centro-acciones")({
       dormidos
     };
   },
-  component: CentroAccionesPage,
+  component: SegmentosPage,
   head: () => ({
     meta: [
       { title: "Segmentos del día — LeadFlow" },
@@ -152,7 +152,7 @@ function Section({ priority, items }: { priority: Priority; items: ActionItem[] 
   );
 }
 
-function CentroAccionesPage() {
+function SegmentosPage() {
   const data = Route.useLoaderData();
 
   const urgentes: ActionItem[] = [
