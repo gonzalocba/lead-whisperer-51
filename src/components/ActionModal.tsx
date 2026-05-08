@@ -1,37 +1,21 @@
 import { useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
 import type { ActionEntry } from "@/lib/mock-data";
-
-const TYPES = [
-  "Llamada",
-  "WhatsApp",
-  "Email",
-  "Cotización enviada",
-  "Seguimiento",
-  "Recompra",
-];
-const RESULTS = [
-  "No responde",
-  "Responde",
-  "Interesado",
-  "Solicita información",
-  "Cotización enviada",
-  "En análisis",
-  "Rechazado",
-  "Cerrado ganado",
-  "Recompra interesado",
-  "Recompra no interesado",
-  "Recompra cerrado ganado",
-];
 
 export function ActionModal({
   open,
   onClose,
   onSave,
+  tipos,
+  resultados,
+  isSaving
 }: {
   open: boolean;
   onClose: () => void;
-  onSave: (a: ActionEntry, advance: boolean) => void;
+  onSave: (data: { typeId: number, resultId: number, note: string }, advance: boolean) => void;
+  tipos: any[];
+  resultados: any[];
+  isSaving?: boolean;
 }) {
   const [type, setType] = useState("");
   const [result, setResult] = useState("");
@@ -49,15 +33,13 @@ export function ActionModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!type || !result) return;
-    const now = new Date();
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const date = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-    onSave({ date, type, result, note: note.trim() || "—" }, advance);
-    setNote("");
-    setAdvance(false);
-    setType("");
-    setResult("");
+    if (!type || !result || isSaving) return;
+    onSave({ 
+      typeId: Number(type), 
+      resultId: Number(result), 
+      note: note.trim() 
+    }, advance);
+    // Nota: El reseteo se manejará desde el padre tras completarse
   };
 
   return (
@@ -77,10 +59,11 @@ export function ActionModal({
               value={type}
               onChange={(e) => setType(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring"
+              disabled={isSaving}
             >
               <option value="" disabled>Seleccionar...</option>
-              {TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
+              {tipos.map((t) => (
+                <option key={t.id_tipo_accion} value={t.id_tipo_accion}>{t.nombre}</option>
               ))}
             </select>
           </div>
@@ -91,10 +74,11 @@ export function ActionModal({
               value={result}
               onChange={(e) => setResult(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm outline-none focus:border-ring"
+              disabled={isSaving}
             >
               <option value="" disabled>Seleccionar...</option>
-              {RESULTS.map((r) => (
-                <option key={r} value={r}>{r}</option>
+              {resultados.map((r) => (
+                <option key={r.id_resultado} value={r.id_resultado}>{r.nombre}</option>
               ))}
             </select>
           </div>
@@ -133,15 +117,18 @@ export function ActionModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted"
+              disabled={isSaving}
+              className="rounded-md border border-border bg-background px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              Guardar acción
+              {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isSaving ? "Guardando..." : "Guardar acción"}
             </button>
           </div>
         </form>

@@ -1,18 +1,30 @@
-MODELO DE DATOS — CRM OPERATIVO AGENCIA DE VIAJES
+# 7. MODELO DE DATOS — CRM OPERATIVO AGENCIA DE VIAJES
 
+### TABLA: leads
+### TABLA: acciones_dia
+### TABLA: recompras
+-
+### dim_estado_pipeline (VENTA)
+### dim_estado_recompra
+### dim_tipo_accion     (equipo)
+### dim_resultado_accion 
+### dim_resultado_recompra
+### dim_servicios
+### dim_vendedor
+
+---
 ## 🧱 FACT
 
 ### TABLA: leads
 id_lead (uuid)  
 nombre  
 contacto  
-fecha_creacion  
-ultima_actividad  
-proxima_accion_fecha  
---
 id_servicio  
 id_estado  
 id_vendedor  
+fecha_creacion  
+ultima_actividad  
+proxima_accion_fecha  
 
 -- cierre  
 fecha_cierre  
@@ -30,7 +42,6 @@ id_lead
 id_tipo_accion  
 id_resultado  
 fecha_accion  
-proxima_accion_fecha
 descripcion  
 
 ---
@@ -49,7 +60,6 @@ id_resultado_recompra
 
 proxima_accion_fecha  
 
-origen (manual|automatico)
 activo (boolean)  
 observaciones  
 
@@ -82,7 +92,7 @@ Valores:
 5 descartado  
 
 ---
-### dim_tipo_accion
+### dim_tipo_accion  (equipo)
 id_tipo_accion  
 nombre  
 
@@ -94,13 +104,11 @@ Valores:
 5 Seguimiento  
 
 ---
-### dim_resultado_accion (VENTA)
+### dim_resultado_accion 
 id_resultado  
 nombre  
-id_estado_pipeline_sugerido
+id_estado_pipeline_sugerido  
 dias_proxima_accion  
-
-
 
 Valores:
 1 No responde → contactado (1 día)  
@@ -110,8 +118,9 @@ Valores:
 5 Cotización enviada → seguimiento (2 días)  
 6 En análisis → seguimiento (3 días)  
 7 Rechazado → perdido  
-8 Cerrado ganado → cerrado  ---
+8 Cerrado ganado → cerrado  
 
+---
 ### dim_resultado_recompra
 id_resultado_recompra  
 nombre  
@@ -144,13 +153,12 @@ email
 ## 🔗 RELACIONES
 
 ### Venta
-- leads.id_lead → acciones_dia.id_lead 
-- leads.id_servicio → dim_servicios.id_servicio
-- leads.id_vendedor → dim_vendedor.id_vendedor 
-- leads.id_estado → dim_estado_pipeline.id_estado  
+- leads.id_lead → acciones_dia.id_lead  
 - acciones_dia.id_resultado → dim_resultado_accion.id_resultado  
 - acciones_dia.id_tipo_accion → dim_tipo_accion.id_tipo_accion  
+- leads.id_estado → dim_estado_pipeline.id_estado  
 - dim_resultado_accion.id_estado_pipeline_sugerido → dim_estado_pipeline.id_estado  
+
 ---
 
 ### Recompra

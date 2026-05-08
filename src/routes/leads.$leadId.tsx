@@ -4,17 +4,112 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { PipelineStepper } from "@/components/PipelineStepper";
 import { ActionModal } from "@/components/ActionModal";
 import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
-import { leads, defaultActions, pipelineSteps } from "@/lib/mock-data";
-import type { ActionEntry } from "@/lib/mock-data";
-import type { LeadStatus } from "@/lib/mock-data";
+import { pipelineSteps } from "@/lib/mock-data";
+import type { ActionEntry, LeadStatus, Lead } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
 import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
 import { useState } from "react";
 
 export const Route = createFileRoute("/leads/$leadId")({
-  loader: ({ params }) => {
-    const lead = leads.find((l) => l.id === params.leadId);
-    if (!lead) throw notFound();
-    return { lead };
+  loader: async ({ params }) => {
+    // Buscar directamente por la clave primaria id_lead
+    const { data, error } = await supabase
+      .from('leads')
+      .select('*')
+      .eq('id_lead', params.leadId)
+      .single();
+
+    if (error || !data) {
+      console.error("Error cargando el lead desde Supabase:", error);
+      throw notFound();
+    }
+
+    // Buscar acciones de este lead
+    const { data: dbActions } = await supabase
+      .from('acciones_dia')
+      .select('*')
+      .eq('id_lead', params.leadId)
+      .order('fecha_accion', { ascending: false });
+
+    // Buscar dimensiones para mapeos y dropdowns
+    // Si no existen (ej. por RLS) retornarán [] o error
+    const { data: tipos } = await supabase.from('dim_tipo_accion').select('*');
+    const { data: resultados } = await supabase.from('dim_resultado_accion').select('*');
+
+    let tiposList = tipos || [];
+    let resultadosList = resultados || [];
+
+    // Fallback antifrágil si las tablas de dimensiones están vacías o bloqueadas por RLS
+    if (tiposList.length === 0) {
+      tiposList = [
+        { id_tipo_accion: 1, nombre: 'Llamada' },
+        { id_tipo_accion: 2, nombre: 'WhatsApp' },
+        { id_tipo_accion: 3, nombre: 'Email' },
+        { id_tipo_accion: 4, nombre: 'Reunión' },
+        { id_tipo_accion: 5, nombre: 'Seguimiento' }
+      ];
+    }
+
+    if (resultadosList.length === 0) {
+      resultadosList = [
+        { id_resultado: 1, nombre: 'No responde' },
+        { id_resultado: 2, nombre: 'Responde' },
+        { id_resultado: 3, nombre: 'Interesado' },
+        { id_resultado: 4, nombre: 'Solicita información' },
+        { id_resultado: 5, nombre: 'Cotización enviada' },
+        { id_resultado: 6, nombre: 'En análisis' },
+        { id_resultado: 7, nombre: 'Rechazado' },
+        { id_resultado: 8, nombre: 'Cerrado ganado' }
+      ];
+    }
+
+    const mapEstado = (id: any) => {
+      if (typeof id === 'string' && isNaN(Number(id))) return id;
+      switch(Number(id)) {
+        case 1: return 'Nuevo';
+        case 2: return 'Contactado';
+        case 3: return 'En negociación';
+        case 4: return 'Cerrado ganado';
+        case 5: return 'Cerrado perdido';
+        default: return 'Nuevo';
+      }
+    };
+
+    const lead: Lead = {
+      id: data.id_lead || data.id || params.leadId,
+      name: data.nombre || data.name || 'Sin nombre',
+      destination: data.destino || data.destination || (data.id_servicio ? `Servicio #${data.id_servicio}` : 'Desconocido'),
+      status: mapEstado(data.id_estado || data.estado || data.status) as LeadStatus,
+      daysInPipeline: data.dias_pipeline || data.daysInPipeline || 0,
+      whatsapp: data.contacto || data.whatsapp || '',
+      tripType: data.tipo_viaje || data.tripType || '',
+      passengers: data.pasajeros || data.passengers || 1,
+      estimatedDate: data.fecha_estimada || data.estimatedDate || '',
+      budget: data.presupuesto || data.budget || '',
+      assignedTo: data.vendedor || data.assignedTo || ''
+    };
+
+    const mappedActions: ActionEntry[] = (dbActions || []).map((a: any) => {
+      const tipoObj = tiposList.find(t => t.id_tipo_accion === a.id_tipo_accion);
+      const resObj = resultadosList.find(r => r.id_resultado === a.id_resultado);
+      
+      return {
+        date: new Date(a.fecha_accion).toLocaleString("es-AR", { 
+          day: '2-digit', month: '2-digit', year: 'numeric', 
+          hour: '2-digit', minute: '2-digit' 
+        }),
+        type: tipoObj?.nombre || a.id_tipo_accion || 'Desconocido',
+        result: resObj?.nombre || a.id_resultado || 'Desconocido',
+        note: a.descripcion || ''
+      };
+    });
+
+    return { 
+      lead, 
+      initialActions: mappedActions,
+      tipos: tiposList,
+      resultados: resultadosList
+    };
   },
   component: LeadDetailPage,
   notFoundComponent: () => (
@@ -32,11 +127,12 @@ export const Route = createFileRoute("/leads/$leadId")({
 });
 
 function LeadDetailPage() {
-  const { lead } = Route.useLoaderData();
-  const [actions, setActions] = useState<ActionEntry[]>(defaultActions);
+  const { lead, initialActions, tipos, resultados } = Route.useLoaderData();
+  const [actions, setActions] = useState<ActionEntry[]>(initialActions);
   const [modalOpen, setModalOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
   const [status, setStatus] = useState<LeadStatus>(lead.status);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleDownloadProfile = () => {
     const today = new Date().toLocaleDateString("es-AR");
@@ -219,15 +315,54 @@ function LeadDetailPage() {
       <ActionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={(a, advance) => {
-          setActions((prev) => [a, ...prev]);
-          if (advance) {
-            const idx = pipelineSteps.indexOf(status);
-            if (idx >= 0 && idx < pipelineSteps.length - 1) {
-              setStatus(pipelineSteps[idx + 1]);
+        tipos={tipos}
+        resultados={resultados}
+        isSaving={isSaving}
+        onSave={async (data, advance) => {
+          setIsSaving(true);
+          try {
+            const now = new Date();
+            // Insertar en Supabase
+            const { error } = await supabase.from('acciones_dia').insert({
+              id_lead: lead.id,
+              id_tipo_accion: data.typeId,
+              id_resultado: data.resultId,
+              descripcion: data.note,
+              fecha_accion: now.toISOString()
+            });
+
+            if (error) throw error;
+
+            // Actualizar UI optimista
+            const tipoObj = tipos.find(t => t.id_tipo_accion === data.typeId);
+            const resObj = resultados.find(r => r.id_resultado === data.resultId);
+            
+            const newAction: ActionEntry = {
+              date: now.toLocaleString("es-AR", { 
+                day: '2-digit', month: '2-digit', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+              }),
+              type: tipoObj?.nombre || String(data.typeId),
+              result: resObj?.nombre || String(data.resultId),
+              note: data.note || ''
+            };
+
+            setActions((prev) => [newAction, ...prev]);
+
+            if (advance) {
+              const idx = pipelineSteps.indexOf(status);
+              if (idx >= 0 && idx < pipelineSteps.length - 1) {
+                setStatus(pipelineSteps[idx + 1]);
+                // TODO: Idealmente también actualizar el id_estado del lead en Supabase
+              }
             }
+            setModalOpen(false);
+          } catch (err) {
+            console.error("Error guardando acción:", err);
+            alert("Error al guardar la acción. Por favor intenta de nuevo.");
+          } finally {
+            setIsSaving(false);
           }
-          setModalOpen(false);
         }}
       />
     </AppShell>

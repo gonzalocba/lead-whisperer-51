@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { statusCounts, wonVsLostByMonth, topDestinations } from "@/lib/mock-data";
+import { supabase } from "@/lib/supabase";
 import { ArrowUpRight, Sparkles, Clock, MapPin, BrainCircuit } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -17,6 +17,127 @@ import {
 import { ClosingGauge } from "@/components/ClosingGauge";
 
 export const Route = createFileRoute("/dashboard")({
+  loader: async () => {
+    const [{ data: leads }, { data: servicios }] = await Promise.all([
+      supabase.from("leads").select("*"),
+      supabase.from("dim_servicios").select("*")
+    ]);
+
+    const leadsList = leads || [];
+    const serviciosList = servicios || [
+      { id_servicio: 1, nombre: 'Brasil' },
+      { id_servicio: 2, nombre: 'Caribe' },
+      { id_servicio: 3, nombre: 'Europa' },
+      { id_servicio: 4, nombre: 'Norteamérica' },
+      { id_servicio: 5, nombre: 'Argentina' }
+    ];
+
+    // 1. Status Counts
+    const statusLabels: Record<number, string> = {
+      1: "Nuevo",
+      2: "Contactado",
+      3: "En negociación",
+      4: "Comprometido",
+      5: "Cerrado ganado",
+      6: "Cerrado perdido"
+    };
+
+    const statusCounts: Record<string, number> = {
+      "Nuevo": 0,
+      "Contactado": 0,
+      "En negociación": 0,
+      "Comprometido": 0,
+      "Cerrado ganado": 0
+    };
+
+    leadsList.forEach(lead => {
+      const stateId = Number(lead.id_estado);
+      const label = statusLabels[stateId];
+      if (label && statusCounts[label] !== undefined) {
+        statusCounts[label]++;
+      }
+    });
+
+    // 2. Destinos/Servicios más consultados
+    const destinationCounts: Record<string, number> = {};
+    leadsList.forEach(lead => {
+      const servId = lead.id_servicio;
+      if (!servId) return;
+      const service = serviciosList.find(s => s.id_servicio === servId);
+      const name = service ? service.nombre : `Servicio #${servId}`;
+      destinationCounts[name] = (destinationCounts[name] || 0) + 1;
+    });
+
+    const topDestinations = Object.entries(destinationCounts)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    if (topDestinations.length === 0) {
+      topDestinations.push({ name: 'Sin datos', value: 0 });
+    }
+
+    // 3. Alerta Leads > 24hs
+    const now = new Date();
+    const leadsDelayed = leadsList.filter(lead => {
+      const stateId = Number(lead.id_estado);
+      if (stateId === 5 || stateId === 6) return false;
+      const act = new Date(lead.ultima_actividad || lead.fecha_creacion || now);
+      const diffHs = (now.getTime() - act.getTime()) / (1000 * 60 * 60);
+      return diffHs > 24;
+    }).length;
+
+    // 4. Cerrados vs Perdidos & Promedio Cierre
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+    const wonVsLostByMonth: { month: string; ganados: number; perdidos: number }[] = [];
+    
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      wonVsLostByMonth.push({
+        month: monthNames[d.getMonth()],
+        ganados: 0,
+        perdidos: 0
+      });
+    }
+
+    let sumDaysToClose = 0;
+    let countClosedWon = 0;
+
+    leadsList.forEach(lead => {
+      const stateId = Number(lead.id_estado);
+      if (stateId === 5 || stateId === 6) {
+        const dateStr = lead.fecha_cierre || lead.ultima_actividad || lead.fecha_creacion;
+        if (dateStr) {
+          const d = new Date(dateStr);
+          const monthLabel = monthNames[d.getMonth()];
+          const entry = wonVsLostByMonth.find(e => e.month === monthLabel);
+          if (entry) {
+            if (stateId === 5) entry.ganados++;
+            if (stateId === 6) entry.perdidos++;
+          }
+        }
+      }
+
+      if (stateId === 5) {
+        const createDate = new Date(lead.fecha_creacion);
+        const closeDate = new Date(lead.fecha_cierre || lead.ultima_actividad || lead.fecha_creacion);
+        const diffDays = Math.max(0, (closeDate.getTime() - createDate.getTime()) / (1000 * 60 * 60 * 24));
+        sumDaysToClose += diffDays;
+        countClosedWon++;
+      }
+    });
+
+    const averageCloseDays = countClosedWon > 0 ? Math.round(sumDaysToClose / countClosedWon) : 0;
+
+    return {
+      statusCounts,
+      topDestinations,
+      leadsDelayed,
+      wonVsLostByMonth,
+      averageCloseDays
+    };
+  },
   component: DashboardPage,
   head: () => ({
     meta: [
@@ -27,6 +148,14 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardPage() {
+  const { 
+    statusCounts, 
+    topDestinations, 
+    leadsDelayed, 
+    wonVsLostByMonth, 
+    averageCloseDays 
+  } = Route.useLoaderData();
+
   return (
     <AppShell>
       {/* Header */}
@@ -34,7 +163,7 @@ function DashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Hola, Laura</h1>
           <p className="text-sm text-muted-foreground">
-            Tenés <span className="font-medium text-foreground">3 leads</span> esperando una respuesta hace más de 24h.
+            Tenés <span className="font-medium text-foreground">{leadsDelayed} leads</span> esperando una respuesta hace más de 24h.
           </p>
         </div>
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs">
@@ -113,7 +242,7 @@ function DashboardPage() {
             <Clock className="h-3.5 w-3.5" /> Promedio de cierre
           </div>
           <div className="mt-3">
-            <ClosingGauge value={11} target={8} max={14} />
+            <ClosingGauge value={averageCloseDays || 0} target={8} max={maxDays(averageCloseDays)} />
           </div>
           <p className="mt-3 text-center text-xs text-muted-foreground">
             −2 días vs mes anterior
@@ -122,9 +251,9 @@ function DashboardPage() {
 
         <div className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5" /> Destinos más consultados
+            <MapPin className="h-3.5 w-3.5" /> Servicios más consultados
           </div>
-          <DestinationsBarChart />
+          <DestinationsBarChart data={topDestinations} />
         </div>
 
         <div className="rounded-xl border border-border bg-card p-5">
@@ -150,8 +279,13 @@ function DashboardPage() {
   );
 }
 
-function DestinationsBarChart() {
-  const data = topDestinations.slice(0, 5);
+function maxDays(avg: number) {
+  if (avg < 5) return 10;
+  if (avg < 15) return 20;
+  return avg + 10;
+}
+
+function DestinationsBarChart({ data }: { data: { name: string, value: number }[] }) {
   const maxValue = Math.max(...data.map((d) => d.value));
   const highlightIndex = data.findIndex((d) => d.value === maxValue);
 

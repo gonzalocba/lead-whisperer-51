@@ -94,8 +94,6 @@ Define:
 ---
 
 
-
-
 # 🧭 FLUJO DE EJECUCIÓN
 
 ## 🟠 FASE 1 — DEFINICIÓN ESTRATÉGICA
@@ -153,7 +151,6 @@ Define:
 ❗ No avanzar sin esta fase
 
 ---
-
 ## 🟠 FASE 3 — DOCUMENTACIÓN
 
 📂 `/3_DOCUMENTOS/`
@@ -162,9 +159,12 @@ Crear:
 
 - documento_maestro.md  
 - modelo_db.md
+- multiagent.md
 - implementation_plan.md  
 - restricciones.md  
-- interfaz.md  
+- interfaz.md 
+- modelo_db.md
+- prompts_conexion.md
 - skills_core.md
 
 ---
