@@ -1,7 +1,93 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/centro-acciones")({
+  loader: async () => {
+    // 1. Traer data de la BD
+    const [{ data: leads }, { data: acciones }] = await Promise.all([
+      supabase.from("leads").select("*"),
+      supabase.from("acciones_dia").select("*")
+    ]);
+
+    const leadsList = leads || [];
+    const accionesList = acciones || [];
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // 2. Contadores
+    let sinRespuesta = 0;
+    let followUpsVencidos = 0;
+    let enNegociacion = 0;
+    let altoValor = 0;
+    let altaIntencion = 0;
+    let comprometidos = 0;
+    let dormidos = 0;
+
+    // 3. Evaluar cada lead
+    leadsList.forEach(lead => {
+      const isClient = lead.es_cliente;
+      const state = Number(lead.id_estado);
+      const ultAct = lead.ultima_actividad ? new Date(lead.ultima_actividad) : new Date(lead.fecha_creacion);
+
+      // PRIORIDAD ALTA
+      if (!isClient && (state === 1 || state === 2)) {
+        const diffHs = (now.getTime() - ultAct.getTime()) / (1000 * 60 * 60);
+        if (diffHs > 24) sinRespuesta++;
+      }
+
+      if (!isClient && [2,3,4].includes(state) && lead.proxima_accion_fecha) {
+        const proxDate = new Date(lead.proxima_accion_fecha);
+        if (proxDate < today) followUpsVencidos++;
+      }
+
+      // OPORTUNIDADES
+      if (!isClient && state === 3) {
+        enNegociacion++;
+      }
+
+      if (!isClient && [2,3,4].includes(state) && Number(lead.valor_total_cliente) >= 3000) {
+        altoValor++;
+      }
+
+      // Para alta intención (último resultado interesado o solicita info -> ids 3,4,5 aprox)
+      if (!isClient && state < 5) {
+        const lActions = accionesList.filter(a => a.id_lead === lead.id_lead);
+        if (lActions.length > 0) {
+          lActions.sort((a, b) => new Date(b.fecha_accion).getTime() - new Date(a.fecha_accion).getTime());
+          const lastRes = Number(lActions[0].id_resultado);
+          if ([3, 4, 5].includes(lastRes)) {
+            // Validar que la actividad sea reciente (< 48h)
+            const diffHs = (now.getTime() - ultAct.getTime()) / (1000 * 60 * 60);
+            if (diffHs <= 48) altaIntencion++;
+          }
+        }
+      }
+
+      // ESCALA
+      if (!isClient && state === 4) {
+        comprometidos++;
+      }
+
+      if (!isClient && [2,3].includes(state)) {
+        const diffDays = (now.getTime() - ultAct.getTime()) / (1000 * 60 * 60 * 24);
+        if (diffDays >= 5) dormidos++;
+      }
+    });
+
+    return {
+      sinRespuesta,
+      followUpsVencidos,
+      clientesRecompra: 0, // Pendiente Paso 6
+      enNegociacion,
+      altoValor,
+      altaIntencion,
+      lanzarRecompra: 0, // Pendiente Paso 6
+      comprometidos,
+      dormidos
+    };
+  },
   component: CentroAccionesPage,
   head: () => ({
     meta: [
@@ -18,7 +104,9 @@ type Priority = "urgent" | "opportunity" | "scale";
 
 interface ActionItem {
   title: string;
-  secondaryLabel: string;
+  actionText: string;
+  count: number;
+  linkText: string;
   listHref: string;
 }
 
@@ -28,23 +116,7 @@ const priorityMeta: Record<Priority, { dot: string; label: string }> = {
   scale: { dot: "bg-emerald-500", label: "Escala" },
 };
 
-const urgentes: ActionItem[] = [
-  { title: "Contactar 5 leads sin respuesta", secondaryLabel: "Ver leads", listHref: "/leads" },
-  { title: "Resolver 3 follow-ups vencidos", secondaryLabel: "Ver leads", listHref: "/leads" },
-  { title: "Contactar 4 clientes para recompra", secondaryLabel: "Ver clientes", listHref: "/recompra" },
-];
-
-const oportunidades: ActionItem[] = [
-  { title: "Reactivar 6 leads en negociación", secondaryLabel: "Ver leads", listHref: "/leads" },
-  { title: "Contactar 3 leads de alto valor", secondaryLabel: "Ver leads", listHref: "/leads" },
-  { title: "Activar 4 leads con alta intención", secondaryLabel: "Ver leads", listHref: "/leads" },
-];
-
-const escala: ActionItem[] = [
-  { title: "Lanzar recompra a 7 clientes", secondaryLabel: "Ver clientes", listHref: "/recompra" },
-  { title: "Contactar 10 leads interesados en Cancún", secondaryLabel: "Ver leads", listHref: "/leads" },
-  { title: "Reactivar 8 leads dormidos", secondaryLabel: "Ver leads", listHref: "/leads" },
-];
+// Estos arrays estáticos se generan dinámicamente ahora dentro del componente
 
 function Section({ priority, items }: { priority: Priority; items: ActionItem[] }) {
   const p = priorityMeta[priority];
@@ -60,14 +132,18 @@ function Section({ priority, items }: { priority: Priority; items: ActionItem[] 
         {items.map((it) => (
           <li
             key={it.title}
-            className="flex items-center justify-between gap-4 py-3"
+            className="flex items-center gap-4 py-3"
           >
-            <span className="text-[15px] text-foreground">{it.title}</span>
+            <span className="flex-1 text-[15px] font-medium text-foreground">{it.title}</span>
+            <div className="flex w-32 items-center justify-start gap-1.5 text-[15px]">
+              <span className="text-muted-foreground">{it.actionText}</span>
+              <span className="font-semibold text-foreground">{it.count}</span>
+            </div>
             <Link
               to={it.listHref}
-              className="shrink-0 text-sm font-medium text-primary hover:underline"
+              className="w-28 shrink-0 text-right text-[15px] font-medium text-primary hover:underline"
             >
-              → {it.secondaryLabel}
+              → {it.linkText}
             </Link>
           </li>
         ))}
@@ -77,6 +153,26 @@ function Section({ priority, items }: { priority: Priority; items: ActionItem[] 
 }
 
 function CentroAccionesPage() {
+  const data = Route.useLoaderData();
+
+  const urgentes: ActionItem[] = [
+    { title: "Leads sin respuesta", actionText: "Contactar", count: data.sinRespuesta, linkText: "Ver leads", listHref: "/leads?segmento=sin_respuesta" },
+    { title: "Follow-ups vencidos", actionText: "Resolver", count: data.followUpsVencidos, linkText: "Ver leads", listHref: "/leads?segmento=follow_ups" },
+    { title: "Clientes para recompra", actionText: "Contactar", count: data.clientesRecompra, linkText: "Ver clientes", listHref: "/recompra" },
+  ];
+
+  const oportunidades: ActionItem[] = [
+    { title: "Leads en negociación", actionText: "Reactivar", count: data.enNegociacion, linkText: "Ver leads", listHref: "/leads?segmento=negociacion" },
+    { title: "Leads de alto valor", actionText: "Contactar", count: data.altoValor, linkText: "Ver leads", listHref: "/leads?segmento=alto_valor" },
+    { title: "Leads con alta intención", actionText: "Activar", count: data.altaIntencion, linkText: "Ver leads", listHref: "/leads?segmento=alta_intencion" },
+  ];
+
+  const escala: ActionItem[] = [
+    { title: "Lanzar recompra", actionText: "Clientes", count: data.lanzarRecompra, linkText: "Ver clientes", listHref: "/recompra" },
+    { title: "Leads comprometidos", actionText: "Contactar", count: data.comprometidos, linkText: "Ver leads", listHref: "/leads?segmento=comprometidos" },
+    { title: "Leads dormidos", actionText: "Reactivar", count: data.dormidos, linkText: "Ver leads", listHref: "/leads?segmento=dormidos" },
+  ];
+
   return (
     <AppShell>
       <div className="mx-auto max-w-2xl">

@@ -7,6 +7,11 @@ import { Eye, Search, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
 export const Route = createFileRoute("/leads/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      segmento: search.segmento as string | undefined,
+    }
+  },
   component: LeadsListPage,
   head: () => ({
     meta: [
@@ -28,6 +33,7 @@ const STATUS_FILTERS = [
 ] as const;
 
 function LeadsListPage() {
+  const { segmento } = Route.useSearch();
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [search, setSearch] = useState("");
   const [leadsData, setLeadsData] = useState<Lead[]>([]);
@@ -37,37 +43,79 @@ function LeadsListPage() {
   useEffect(() => {
     async function fetchLeads() {
       try {
-        const { data, error } = await supabase.from('leads').select('*');
-        if (error) throw error;
+        const [leadsRes, serviciosRes, accionesRes] = await Promise.all([
+          supabase.from('leads').select('*'),
+          supabase.from('dim_servicios').select('*'),
+          supabase.from('acciones_dia').select('*')
+        ]);
         
-        if (data) {
-          const mapEstado = (id: any) => {
-            if (typeof id === 'string' && isNaN(Number(id))) return id;
-            switch(Number(id)) {
-              case 1: return 'Nuevo';
-              case 2: return 'Contactado';
-              case 3: return 'En negociación'; // mapeado desde 'seguimiento'
-              case 4: return 'Cerrado ganado'; // mapeado desde 'cerrado'
-              case 5: return 'Cerrado perdido'; // mapeado desde 'perdido'
-              default: return 'Nuevo';
-            }
-          };
+        if (leadsRes.error) throw leadsRes.error;
+        
+        const data = leadsRes.data || [];
+        const servicios = serviciosRes.data || [];
+        const acciones = accionesRes.data || [];
 
-          const mapped: Lead[] = data.map((d: any) => ({
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const mapEstado = (id: any) => {
+          if (typeof id === 'string' && isNaN(Number(id))) return id;
+          switch(Number(id)) {
+            case 1: return 'Nuevo';
+            case 2: return 'Contactado';
+            case 3: return 'En negociación';
+            case 4: return 'Comprometido'; // mapeado para matching perfecto
+            case 5: return 'Cerrado ganado'; // usamos 5 como ganado en tu simulador
+            case 6: return 'Cerrado perdido'; // usamos 6 como perdido
+            default: return 'Nuevo';
+          }
+        };
+
+        const mapped: Lead[] = data.map((d: any) => {
+          const stateId = Number(d.id_estado);
+          const isClient = d.es_cliente;
+          const ultAct = d.ultima_actividad ? new Date(d.ultima_actividad) : new Date(d.fecha_creacion);
+          const diffHs = (now.getTime() - ultAct.getTime()) / (1000 * 60 * 60);
+          const diffDays = (now.getTime() - ultAct.getTime()) / (1000 * 60 * 60 * 24);
+          
+          const tags: string[] = [];
+
+          if (!isClient && (stateId === 1 || stateId === 2) && diffHs > 24) tags.push("sin_respuesta");
+          if (!isClient && [2,3,4].includes(stateId) && d.proxima_accion_fecha && new Date(d.proxima_accion_fecha) < today) tags.push("follow_ups");
+          if (!isClient && stateId === 3) tags.push("negociacion");
+          if (!isClient && [2,3,4].includes(stateId) && Number(d.valor_total_cliente) >= 3000) tags.push("alto_valor");
+          
+          if (!isClient && stateId < 5) {
+            const lActions = acciones.filter(a => a.id_lead === d.id_lead);
+            if (lActions.length > 0) {
+              lActions.sort((a, b) => new Date(b.fecha_accion).getTime() - new Date(a.fecha_accion).getTime());
+              const lastRes = Number(lActions[0].id_resultado);
+              if ([3, 4, 5].includes(lastRes) && diffHs <= 48) tags.push("alta_intencion");
+            }
+          }
+
+          if (!isClient && stateId === 4) tags.push("comprometidos");
+          if (!isClient && [2,3].includes(stateId) && diffDays >= 5) tags.push("dormidos");
+
+          const service = servicios.find(s => s.id_servicio === d.id_servicio);
+          const destName = service ? service.nombre : (d.id_servicio ? `Servicio #${d.id_servicio}` : 'Desconocido');
+
+          return {
             id: d.id_lead || d.id || String(Math.random()),
             name: d.nombre || d.name || 'Sin nombre',
-            destination: d.destino || d.destination || (d.id_servicio ? `Servicio #${d.id_servicio}` : 'Desconocido'),
+            destination: destName,
             status: mapEstado(d.id_estado || d.estado || d.status),
-            daysInPipeline: d.dias_pipeline || d.daysInPipeline || 0,
+            daysInPipeline: diffDays >= 0 ? Math.floor(diffDays) : 0,
             whatsapp: d.contacto || d.whatsapp || '',
             tripType: d.tipo_viaje || d.tripType || '',
             passengers: d.pasajeros || d.passengers || 1,
             estimatedDate: d.fecha_estimada || d.estimatedDate || '',
             budget: d.presupuesto || d.budget || '',
-            assignedTo: d.vendedor || d.assignedTo || ''
-          }));
-          setLeadsData(mapped);
-        }
+            assignedTo: d.vendedor || d.assignedTo || '',
+            _tags: tags // hidden property for segment filtering
+          };
+        });
+        setLeadsData(mapped);
       } catch (err: any) {
         console.error("Error fetching leads:", err);
         setError(err.message || 'Error al cargar leads');
@@ -82,7 +130,8 @@ function LeadsListPage() {
   const filtered = leadsData.filter((l) => {
     const matchStatus = statusFilter === "Todos" || l.status === statusFilter;
     const matchName = l.name.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchName;
+    const matchSegment = segmento ? (l as any)._tags?.includes(segmento) : true;
+    return matchStatus && matchName && matchSegment;
   });
 
   const dynamicStatusCounts = leadsData.reduce((acc, lead) => {
@@ -105,9 +154,17 @@ function LeadsListPage() {
 
   return (
     <AppShell>
-      <div className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
-        <p className="text-sm text-muted-foreground">Todos los contactos que entraron por la landing.</p>
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
+          <p className="text-sm text-muted-foreground">Todos los contactos que entraron por la landing.</p>
+        </div>
+        {segmento && (
+          <div className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+            Filtrando por segmento: {segmento.replace('_', ' ')}
+            <Link to="/leads" className="ml-2 hover:underline opacity-80">(Limpiar)</Link>
+          </div>
+        )}
       </div>
 
       {isLoading && (
