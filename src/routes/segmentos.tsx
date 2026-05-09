@@ -5,23 +5,69 @@ import { supabase } from "@/lib/supabase";
 export const Route = createFileRoute("/segmentos")({
   loader: async () => {
     // 1. Traer data de la BD
-    const [{ data: leads }, { data: acciones }] = await Promise.all([
+    const [
+      { data: leads },
+      { data: acciones },
+      { data: servicios },
+      { data: recomprasDb }
+    ] = await Promise.all([
       supabase.from("leads").select("*"),
-      supabase.from("acciones_dia").select("*")
+      supabase.from("acciones_dia").select("*"),
+      supabase.from("dim_servicios").select("*"),
+      supabase.from("recompras").select("*").eq("activo", true)
     ]);
 
     const leadsList = leads || [];
     const accionesList = acciones || [];
+    const serviciosList = servicios || [];
+    let recomprasList = recomprasDb || [];
 
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+    // 1.5. LÓGICA AUTO-TRIGGER DE RECOMPRAS (MVP)
+    const recomprasToInsert: any[] = [];
+    
+    for (const lead of leadsList) {
+      if (lead.es_cliente && lead.fecha_ultima_compra) {
+        const serv = serviciosList.find(s => s.id_servicio === lead.id_servicio);
+        const diasTrigger = serv?.dias_recompra_trigger || 180; // default 180 si no hay
+        
+        const lastPurchase = new Date(lead.fecha_ultima_compra);
+        const diffDays = (now.getTime() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24);
+        
+        if (diffDays >= diasTrigger) {
+          // El cliente está listo para recompra. ¿Ya tiene una recompra activa?
+          const hasActive = recomprasList.some(r => r.id_lead === lead.id_lead);
+          if (!hasActive) {
+            recomprasToInsert.push({
+              id_lead: lead.id_lead,
+              id_servicio: lead.id_servicio,
+              id_estado_recompra: 1, // Pendiente
+              fecha_trigger: now.toISOString(),
+              activo: true
+            });
+          }
+        }
+      }
+    }
+
+    if (recomprasToInsert.length > 0) {
+      const { data: inserted } = await supabase.from("recompras").insert(recomprasToInsert).select();
+      if (inserted) {
+        recomprasList = [...recomprasList, ...inserted];
+      }
+    }
+
+
     // 2. Contadores
     let sinRespuesta = 0;
     let followUpsVencidos = 0;
+    let clientesRecompra = 0; // Clientes dormidos recompra
     let enNegociacion = 0;
     let altoValor = 0;
     let altaIntencion = 0;
+    let lanzarRecompra = 0; // Recompras pendientes
     let comprometidos = 0;
     let dormidos = 0;
 
@@ -76,14 +122,30 @@ export const Route = createFileRoute("/segmentos")({
       }
     });
 
+    // 4. Evaluar Recompras Activas
+    recomprasList.forEach(r => {
+      const stateId = Number(r.id_estado_recompra);
+      // Lanzar recompra: Pendientes (1)
+      if (stateId === 1) {
+        lanzarRecompra++;
+      }
+      // Clientes dormidos recompra: Contactados (2) o En seguimiento (3) con fecha vencida
+      if ((stateId === 2 || stateId === 3) && r.proxima_accion_fecha) {
+        const proxDate = new Date(r.proxima_accion_fecha);
+        if (proxDate < today) {
+          clientesRecompra++;
+        }
+      }
+    });
+
     return {
       sinRespuesta,
       followUpsVencidos,
-      clientesRecompra: 0, // Pendiente Paso 6
+      clientesRecompra,
       enNegociacion,
       altoValor,
       altaIntencion,
-      lanzarRecompra: 0, // Pendiente Paso 6
+      lanzarRecompra,
       comprometidos,
       dormidos
     };
@@ -158,7 +220,7 @@ function SegmentosPage() {
   const urgentes: ActionItem[] = [
     { title: "Leads sin respuesta", actionText: "Contactar", count: data.sinRespuesta, linkText: "Ver leads", listHref: "/leads?segmento=sin_respuesta" },
     { title: "Follow-ups vencidos", actionText: "Resolver", count: data.followUpsVencidos, linkText: "Ver leads", listHref: "/leads?segmento=follow_ups" },
-    { title: "Clientes para recompra", actionText: "Contactar", count: data.clientesRecompra, linkText: "Ver clientes", listHref: "/recompra" },
+    { title: "Clientes dormidos recompra", actionText: "Contactar", count: data.clientesRecompra, linkText: "Ver clientes", listHref: "/recompra?segmento=dormidos" },
   ];
 
   const oportunidades: ActionItem[] = [
@@ -168,7 +230,7 @@ function SegmentosPage() {
   ];
 
   const escala: ActionItem[] = [
-    { title: "Lanzar recompra", actionText: "Clientes", count: data.lanzarRecompra, linkText: "Ver clientes", listHref: "/recompra" },
+    { title: "Lanzar recompra", actionText: "Clientes", count: data.lanzarRecompra, linkText: "Ver clientes", listHref: "/recompra?segmento=pendientes" },
     { title: "Leads comprometidos", actionText: "Contactar", count: data.comprometidos, linkText: "Ver leads", listHref: "/leads?segmento=comprometidos" },
     { title: "Leads dormidos", actionText: "Reactivar", count: data.dormidos, linkText: "Ver leads", listHref: "/leads?segmento=dormidos" },
   ];

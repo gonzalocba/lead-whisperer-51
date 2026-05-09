@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link, notFound, useRouter } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { RecompraStatusBadge } from "@/components/RecompraStatusBadge";
 import { RecompraStepper } from "@/components/RecompraStepper";
@@ -9,17 +9,75 @@ import type { RecompraAction, RecompraStatus } from "@/lib/recompra-data";
 import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
 import { useState } from "react";
 
+import { supabase } from "@/lib/supabase";
+
 export const Route = createFileRoute("/recompra/$clientId")({
-  loader: ({ params }) => {
-    const client = recompraClients.find((c) => c.id === params.clientId);
-    if (!client) throw notFound();
-    return { client };
+  loader: async ({ params }) => {
+    const { data: recompra, error } = await supabase.from('recompras').select(`
+      *,
+      leads(*),
+      dim_servicios(nombre),
+      dim_tipo_accion(nombre),
+      dim_resultado_recompra(nombre)
+    `).eq('id_recompra', params.clientId).single();
+
+    if (error || !recompra) throw notFound();
+
+    const leadName = Array.isArray(recompra.leads) ? recompra.leads[0]?.nombre : (recompra.leads?.nombre || 'Desconocido');
+    const serviceName = Array.isArray(recompra.dim_servicios) ? recompra.dim_servicios[0]?.nombre : (recompra.dim_servicios?.nombre || 'Desconocido');
+    
+    const mapStatus = (id: any): RecompraStatus => {
+      switch(Number(id)) {
+        case 1: return "Pendiente";
+        case 2: return "Contactado";
+        case 3: return "En seguimiento";
+        case 4: return "Convertido";
+        case 5: return "Descartado";
+        default: return "Pendiente";
+      }
+    };
+
+    const lead = Array.isArray(recompra.leads) ? recompra.leads[0] : recompra.leads;
+    const now = new Date();
+    const lastPurchase = lead?.fecha_ultima_compra ? new Date(lead.fecha_ultima_compra) : null;
+    const diffDays = lastPurchase ? Math.floor((now.getTime() - lastPurchase.getTime()) / (1000 * 60 * 60 * 24)) : 0;
+
+    const client = {
+      id: recompra.id_recompra,
+      name: leadName,
+      service: serviceName,
+      status: mapStatus(recompra.id_estado_recompra),
+      whatsapp: lead?.contacto || 'Sin contacto',
+      lastPurchaseDate: lastPurchase ? lastPurchase.toLocaleDateString("es-AR") : 'N/A',
+      purchasesCount: lead?.cantidad_compras || 0,
+      totalValue: lead?.valor_total_cliente ? `$${lead.valor_total_cliente}` : '$0',
+      timeSinceLastPurchase: `${diffDays} días`,
+      assignedTo: lead?.id_vendedor === 1 ? 'Laura García' : 'Vendedor'
+    };
+
+    // Última acción (la única que guardamos según regla)
+    const actionHistory = [];
+    if (recompra.id_tipo_accion) {
+      const tipoAccion = Array.isArray(recompra.dim_tipo_accion) ? recompra.dim_tipo_accion[0]?.nombre : (recompra.dim_tipo_accion?.nombre || 'Acción');
+      const resultado = Array.isArray(recompra.dim_resultado_recompra) ? recompra.dim_resultado_recompra[0]?.nombre : (recompra.dim_resultado_recompra?.nombre || 'Resultado');
+      const fContacto = new Date(recompra.fecha_contacto).toLocaleString("es-AR", {
+        day: '2-digit', month: '2-digit', hour: '2-digit', minute:'2-digit'
+      });
+      actionHistory.push({
+        date: fContacto,
+        type: tipoAccion,
+        result: resultado,
+        note: recompra.observaciones || ''
+      });
+    }
+
+    return { client, actionHistory };
   },
   component: RecompraDetailPage,
   notFoundComponent: () => (
     <AppShell>
       <p className="text-sm text-muted-foreground">Cliente no encontrado.</p>
-      <Link to="/recompra" className="mt-3 inline-block text-sm font-medium underline">Volver a la lista</Link>
+      <Link to="/recompra" search={{ segmento: undefined }} className="mt-3 inline-block text-sm font-medium underline">Volver a la lista</Link>
     </AppShell>
   ),
   head: ({ loaderData }) => ({
@@ -31,11 +89,10 @@ export const Route = createFileRoute("/recompra/$clientId")({
 });
 
 function RecompraDetailPage() {
-  const { client } = Route.useLoaderData();
-  const [actions, setActions] = useState<RecompraAction[]>(defaultRecompraActions);
+  const router = useRouter();
+  const { client, actionHistory: initialHistory } = Route.useLoaderData();
   const [modalOpen, setModalOpen] = useState(false);
   const [showAI, setShowAI] = useState(false);
-  const [status] = useState<RecompraStatus>(client.status);
 
   const handleDownloadProfile = () => {
     const today = new Date().toLocaleDateString("es-AR");
@@ -61,10 +118,10 @@ function RecompraDetailPage() {
     lines.push("");
     lines.push("HISTORIAL DE ACCIONES");
     lines.push("---------------------");
-    if (actions.length === 0) {
+    if (initialHistory.length === 0) {
       lines.push("(sin acciones registradas)");
     } else {
-      actions.forEach((a) => {
+      initialHistory.forEach((a) => {
         lines.push(`• ${a.date} — ${a.type} → ${a.result}${a.note ? ` | Nota: ${a.note}` : ""}`);
       });
     }
@@ -94,7 +151,7 @@ function RecompraDetailPage() {
   return (
     <AppShell>
       <div className="mb-4">
-        <Link to="/recompra" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/recompra" search={{ segmento: undefined }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
       </div>
@@ -106,7 +163,7 @@ function RecompraDetailPage() {
           <p className="text-sm text-muted-foreground">{client.service} · Último viaje</p>
         </div>
         <div className="flex items-center gap-3">
-          <RecompraStatusBadge status={status} />
+          <RecompraStatusBadge status={client.status as RecompraStatus} />
           <button
             onClick={handleDownloadProfile}
             className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-medium hover:bg-muted"
@@ -132,7 +189,7 @@ function RecompraDetailPage() {
       {/* Estado recompra */}
       <section className="mb-5 rounded-xl border border-border bg-card p-5">
         <h2 className="mb-4 text-sm font-semibold">Estado recompra</h2>
-        <RecompraStepper current={status} />
+        <RecompraStepper current={client.status as any} />
       </section>
 
       {/* Vendedor */}
@@ -169,7 +226,7 @@ function RecompraDetailPage() {
 
       {/* Historial */}
       <section className="mb-5 rounded-xl border border-border bg-card">
-        <h2 className="border-b border-border px-5 py-3.5 text-sm font-semibold">Historial de acciones</h2>
+        <h2 className="border-b border-border px-5 py-3.5 text-sm font-semibold">Última acción registrada</h2>
         <div className="hidden md:block">
           <table className="w-full text-sm">
             <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
@@ -181,7 +238,7 @@ function RecompraDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {actions.map((a, i) => (
+              {initialHistory.map((a, i) => (
                 <tr key={i} className="border-t border-border">
                   <td className="px-5 py-3 text-muted-foreground">{a.date}</td>
                   <td className="px-5 py-3">{a.type}</td>
@@ -189,11 +246,16 @@ function RecompraDetailPage() {
                   <td className="px-5 py-3 text-muted-foreground">{a.note}</td>
                 </tr>
               ))}
+              {initialHistory.length === 0 && (
+                <tr className="border-t border-border">
+                  <td colSpan={4} className="px-5 py-4 text-center text-muted-foreground">Sin acciones registradas.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
         <div className="space-y-3 p-4 md:hidden">
-          {actions.map((a, i) => (
+          {initialHistory.map((a, i) => (
             <div key={i} className="rounded-lg border border-border p-3">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>{a.date}</span>
@@ -203,6 +265,9 @@ function RecompraDetailPage() {
               <p className="mt-1 text-xs text-muted-foreground">{a.note}</p>
             </div>
           ))}
+          {initialHistory.length === 0 && (
+            <div className="text-center text-xs text-muted-foreground p-3">Sin acciones registradas.</div>
+          )}
         </div>
       </section>
 
@@ -211,9 +276,22 @@ function RecompraDetailPage() {
       <RecompraActionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSave={(a) => {
-          setActions((prev) => [a, ...prev]);
+        onSave={async (a) => {
+          const now = new Date();
+          const nextDate = new Date();
+          nextDate.setDate(now.getDate() + a.dias_proxima_accion);
+          
+          await supabase.from('recompras').update({
+            id_tipo_accion: a.id_tipo_accion,
+            id_resultado_recompra: a.id_resultado_recompra,
+            id_estado_recompra: a.id_estado_recompra,
+            observaciones: a.observaciones,
+            fecha_contacto: now.toISOString(),
+            proxima_accion_fecha: nextDate.toISOString()
+          }).eq('id_recompra', client.id);
+
           setModalOpen(false);
+          router.invalidate(); // Refresca loader y la UI
         }}
       />
     </AppShell>

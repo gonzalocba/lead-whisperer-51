@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { StatusBadge } from "@/components/StatusBadge";
 import { supabase } from "@/lib/supabase";
-import { Lead } from "@/lib/mock-data";
+import { Lead, LeadStatus } from "@/lib/mock-data";
 import { Eye, Search, Loader2, AlertCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -58,15 +58,15 @@ function LeadsListPage() {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-        const mapEstado = (id: any) => {
-          if (typeof id === 'string' && isNaN(Number(id))) return id;
+        const mapEstado = (id: any): LeadStatus => {
+          if (typeof id === 'string' && isNaN(Number(id))) return id as LeadStatus;
           switch(Number(id)) {
             case 1: return 'Nuevo';
             case 2: return 'Contactado';
             case 3: return 'En negociación';
-            case 4: return 'Comprometido'; // mapeado para matching perfecto
-            case 5: return 'Cerrado ganado'; // usamos 5 como ganado en tu simulador
-            case 6: return 'Cerrado perdido'; // usamos 6 como perdido
+            case 4: return 'Comprometido';
+            case 5: return 'Cerrado ganado';
+            case 6: return 'Cerrado perdido';
             default: return 'Nuevo';
           }
         };
@@ -135,21 +135,17 @@ function LeadsListPage() {
   });
 
   const dynamicStatusCounts = leadsData.reduce((acc, lead) => {
-    let key = lead.status;
-    if (lead.status === 'Nuevo') key = 'Nuevos';
-    else if (lead.status === 'Contactado') key = 'Contactados';
-    else if (lead.status === 'Cerrado ganado' || lead.status === 'Cerrado perdido') key = 'Cerrados';
-    
+    const key = lead.status;
     acc[key] = (acc[key] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
   const statusCounts = {
-    Nuevos: dynamicStatusCounts['Nuevos'] || 0,
-    Contactados: dynamicStatusCounts['Contactados'] || 0,
+    Nuevo: dynamicStatusCounts['Nuevo'] || 0,
+    Contactado: dynamicStatusCounts['Contactado'] || 0,
     "En negociación": dynamicStatusCounts['En negociación'] || 0,
-    Cerrados: dynamicStatusCounts['Cerrados'] || 0,
-    Recompra: dynamicStatusCounts['Recompra'] || 0,
+    Comprometido: dynamicStatusCounts['Comprometido'] || 0,
+    "Cerrado ganado": dynamicStatusCounts['Cerrado ganado'] || 0,
   };
 
   return (
@@ -162,7 +158,7 @@ function LeadsListPage() {
         {segmento && (
           <div className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
             Filtrando por segmento: {segmento.replace('_', ' ')}
-            <Link to="/leads" className="ml-2 hover:underline opacity-80">(Limpiar)</Link>
+            <Link to="/leads" search={{ segmento: undefined }} className="ml-2 hover:underline opacity-80">(Limpiar)</Link>
           </div>
         )}
       </div>

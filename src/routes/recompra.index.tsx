@@ -5,7 +5,88 @@ import { recompraClients, recompraStatusCounts } from "@/lib/recompra-data";
 import { Eye, Search } from "lucide-react";
 import { useState } from "react";
 
+import { supabase } from "@/lib/supabase";
+import { RecompraStatus } from "@/lib/recompra-data";
+
 export const Route = createFileRoute("/recompra/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      segmento: search.segmento as string | undefined,
+    }
+  },
+  loader: async () => {
+    const { data: recomprasDb, error } = await supabase.from('recompras').select(`
+      id_recompra,
+      id_lead,
+      fecha_trigger,
+      fecha_contacto,
+      id_estado_recompra,
+      proxima_accion_fecha,
+      activo,
+      leads(nombre, contacto),
+      dim_servicios(nombre)
+    `).eq("activo", true);
+    
+    if (error) {
+      console.error(error);
+      return { clients: [], statusCounts: {} };
+    }
+
+    const mapStatus = (id: any): RecompraStatus => {
+      switch(Number(id)) {
+        case 1: return "Pendiente";
+        case 2: return "Contactado";
+        case 3: return "En seguimiento";
+        case 4: return "Convertido";
+        case 5: return "Descartado";
+        default: return "Pendiente";
+      }
+    };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    const clients = (recomprasDb || []).map((r: any) => {
+      const stateId = Number(r.id_estado_recompra);
+      const startD = r.fecha_contacto ? new Date(r.fecha_contacto) : new Date(r.fecha_trigger);
+      const diffDays = Math.floor((now.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
+      
+      const tags: string[] = [];
+      if (stateId === 1) tags.push("pendientes");
+      if ([2,3].includes(stateId) && r.proxima_accion_fecha && new Date(r.proxima_accion_fecha) < today) {
+        tags.push("dormidos");
+      }
+
+      // Handle Supabase nested joins which return arrays or objects depending on cardinality
+      const leadName = Array.isArray(r.leads) ? r.leads[0]?.nombre : (r.leads?.nombre || 'Desconocido');
+      const serviceName = Array.isArray(r.dim_servicios) ? r.dim_servicios[0]?.nombre : (r.dim_servicios?.nombre || 'Desconocido');
+
+      return {
+        id: r.id_recompra,
+        leadId: r.id_lead,
+        name: leadName,
+        service: serviceName,
+        status: mapStatus(stateId),
+        daysInRecompra: diffDays >= 0 ? diffDays : 0,
+        _tags: tags
+      };
+    });
+
+    const statusCounts = clients.reduce((acc: any, c: any) => {
+      acc[c.status] = (acc[c.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    const defaultCounts = {
+      Pendiente: statusCounts["Pendiente"] || 0,
+      Contactado: statusCounts["Contactado"] || 0,
+      "En seguimiento": statusCounts["En seguimiento"] || 0,
+      Convertido: statusCounts["Convertido"] || 0,
+      Descartado: statusCounts["Descartado"] || 0,
+    };
+
+    return { clients, statusCounts: defaultCounts };
+  },
   component: RecompraListPage,
   head: () => ({
     meta: [
@@ -25,20 +106,31 @@ const STATUS_FILTERS = [
 ] as const;
 
 function RecompraListPage() {
+  const { segmento } = Route.useSearch();
+  const { clients: recompraClients, statusCounts: recompraStatusCounts } = Route.useLoaderData();
   const [statusFilter, setStatusFilter] = useState<string>("Todos");
   const [search, setSearch] = useState("");
 
-  const filtered = recompraClients.filter((c) => {
+  const filtered = recompraClients.filter((c: any) => {
     const matchStatus = statusFilter === "Todos" || c.status === statusFilter;
     const matchName = c.name.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchName;
+    const matchSegment = segmento ? c._tags?.includes(segmento) : true;
+    return matchStatus && matchName && matchSegment;
   });
 
   return (
     <AppShell>
-      <div className="mb-5">
-        <h1 className="text-2xl font-semibold tracking-tight">Recompra</h1>
-        <p className="text-sm text-muted-foreground">Clientes en proceso de recompra</p>
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Recompra</h1>
+          <p className="text-sm text-muted-foreground">Clientes en proceso de recompra</p>
+        </div>
+        {segmento && (
+          <div className="rounded-md bg-primary/10 px-3 py-1.5 text-sm font-medium text-primary">
+            Filtrando por segmento: {segmento.replace('_', ' ')}
+            <Link to="/recompra" search={{ segmento: undefined }} className="ml-2 hover:underline opacity-80">(Limpiar)</Link>
+          </div>
+        )}
       </div>
 
       {/* Status chips */}

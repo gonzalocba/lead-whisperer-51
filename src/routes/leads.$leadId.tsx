@@ -115,7 +115,7 @@ export const Route = createFileRoute("/leads/$leadId")({
   notFoundComponent: () => (
     <AppShell>
       <p className="text-sm text-muted-foreground">Lead no encontrado.</p>
-      <Link to="/leads" className="mt-3 inline-block text-sm font-medium underline">Volver a la lista</Link>
+      <Link to="/leads" search={{ segmento: undefined }} className="mt-3 inline-block text-sm font-medium underline">Volver a la lista</Link>
     </AppShell>
   ),
   head: ({ loaderData }) => ({
@@ -198,7 +198,7 @@ function LeadDetailPage() {
   return (
     <AppShell>
       <div className="mb-4">
-        <Link to="/leads" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link to="/leads" search={{ segmento: undefined }} className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" /> Volver
         </Link>
       </div>
