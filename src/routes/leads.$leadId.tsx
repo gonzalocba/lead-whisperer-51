@@ -7,8 +7,9 @@ import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
 import { pipelineSteps } from "@/lib/mock-data";
 import type { ActionEntry, LeadStatus, Lead } from "@/lib/mock-data";
 import { supabase } from "@/lib/supabase";
-import { ArrowLeft, Plus, Sparkles, Download } from "lucide-react";
+import { ArrowLeft, Plus, Sparkles, Download, Loader2 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/leads/$leadId")({
   loader: async ({ params }) => {
@@ -86,7 +87,10 @@ export const Route = createFileRoute("/leads/$leadId")({
       passengers: data.pasajeros || data.passengers || 1,
       estimatedDate: data.fecha_estimada || data.estimatedDate || '',
       budget: data.presupuesto || data.budget || '',
-      assignedTo: data.vendedor || data.assignedTo || ''
+      assignedTo: data.vendedor || data.assignedTo || '',
+      punto_interes: Array.isArray(data.punto_interes) ? data.punto_interes : [],
+      objeciones: Array.isArray(data.objeciones) ? data.objeciones : [],
+      observaciones: data.observaciones || ''
     };
 
     const mappedActions: ActionEntry[] = (dbActions || []).map((a: any) => {
@@ -126,6 +130,16 @@ export const Route = createFileRoute("/leads/$leadId")({
   }),
 });
 
+// ── Chips de datos estructurados para el Contexto Comercial ─────────────────
+const PUNTOS_PRESET = [
+  "Playa", "All inclusive", "Luna de miel", "Viaje familiar",
+  "Cuotas", "Viaje grupal", "Europa", "Brasil", "Crucero",
+];
+const OBJECIONES_PRESET = [
+  "Precio", "Fechas", "Indecisión", "Competencia",
+  "Falta de tiempo", "Miedo / Inseguridad", "Financiación",
+];
+
 function LeadDetailPage() {
   const { lead, initialActions, tipos, resultados } = Route.useLoaderData();
   const [actions, setActions] = useState<ActionEntry[]>(initialActions);
@@ -133,6 +147,46 @@ function LeadDetailPage() {
   const [showAI, setShowAI] = useState(false);
   const [status, setStatus] = useState<LeadStatus>(lead.status);
   const [isSaving, setIsSaving] = useState(false);
+
+  // ── Contexto Comercial ────────────────────────────────────────────────────
+  const [localPuntos, setLocalPuntos] = useState<string[]>(lead.punto_interes ?? []);
+  const [localObjeciones, setLocalObjeciones] = useState<string[]>(lead.objeciones ?? []);
+  const [observacionesText, setObservacionesText] = useState(lead.observaciones ?? "");
+  const [customPuntoInput, setCustomPuntoInput] = useState("");
+  const [isSavingContext, setIsSavingContext] = useState(false);
+
+  const toggleChip = (list: string[], setList: (v: string[]) => void, value: string) => {
+    setList(list.includes(value) ? list.filter((v) => v !== value) : [...list, value]);
+  };
+
+  const addCustomPunto = () => {
+    const trimmed = customPuntoInput.trim();
+    if (trimmed && !localPuntos.includes(trimmed)) {
+      setLocalPuntos([...localPuntos, trimmed]);
+    }
+    setCustomPuntoInput("");
+  };
+
+  const handleSaveContext = async () => {
+    setIsSavingContext(true);
+    try {
+      const { error } = await supabase
+        .from("leads")
+        .update({
+          punto_interes: localPuntos,
+          objeciones: localObjeciones,
+          observaciones: observacionesText,
+        })
+        .eq("id_lead", lead.id);
+      if (error) throw error;
+      toast.success("Contexto comercial guardado.");
+    } catch (err) {
+      console.error("Error guardando contexto:", err);
+      toast.error("Error al guardar. Intentá de nuevo.");
+    } finally {
+      setIsSavingContext(false);
+    }
+  };
 
   const handleDownloadProfile = () => {
     const today = new Date().toLocaleDateString("es-AR");
@@ -231,6 +285,104 @@ function LeadDetailPage() {
           <Field label="Fecha estimada" value={lead.estimatedDate} />
           <Field label="Presupuesto" value={lead.budget} />
         </dl>
+      </section>
+
+      {/* ── Contexto Comercial ──────────────────────────────────────────────── */}
+      <section className="mb-5 rounded-xl border border-border bg-card p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-sm font-semibold">Contexto Comercial</h2>
+          <button
+            id="btn-guardar-contexto"
+            onClick={handleSaveContext}
+            disabled={isSavingContext}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition"
+          >
+            {isSavingContext ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+            Guardar notas
+          </button>
+        </div>
+
+        <div className="space-y-5">
+          {/* Punto de interés */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Punto de interés</p>
+            <div className="flex flex-wrap gap-1.5">
+              {PUNTOS_PRESET.map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => toggleChip(localPuntos, setLocalPuntos, tag)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    localPuntos.includes(tag)
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/60 hover:text-foreground"
+                  }`}
+                >
+                  {tag}
+                </button>
+              ))}
+              {/* Tags personalizados */}
+              {localPuntos.filter((t) => !PUNTOS_PRESET.includes(t)).map((tag) => (
+                <button
+                  key={tag}
+                  onClick={() => toggleChip(localPuntos, setLocalPuntos, tag)}
+                  className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary text-primary-foreground px-3 py-1 text-xs font-medium transition"
+                >
+                  {tag}
+                  <span className="opacity-70 ml-0.5">×</span>
+                </button>
+              ))}
+            </div>
+            {/* Input para tag personalizado */}
+            <div className="mt-2 flex gap-1.5">
+              <input
+                type="text"
+                value={customPuntoInput}
+                onChange={(e) => setCustomPuntoInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addCustomPunto()}
+                placeholder="Agregar interés personalizado..."
+                className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-xs outline-none focus:border-ring placeholder:text-muted-foreground/60"
+              />
+              <button
+                onClick={addCustomPunto}
+                className="rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted transition"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Objeciones */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Objeciones detectadas</p>
+            <div className="flex flex-wrap gap-1.5">
+              {OBJECIONES_PRESET.map((obj) => (
+                <button
+                  key={obj}
+                  onClick={() => toggleChip(localObjeciones, setLocalObjeciones, obj)}
+                  className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    localObjeciones.includes(obj)
+                      ? "border-amber-600 bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200 dark:border-amber-500"
+                      : "border-border bg-background text-muted-foreground hover:border-amber-400 hover:text-foreground"
+                  }`}
+                >
+                  {obj}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Observaciones */}
+          <div>
+            <p className="mb-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">Observaciones</p>
+            <textarea
+              value={observacionesText}
+              onChange={(e) => setObservacionesText(e.target.value)}
+              placeholder="Ej: Quiere viajar en enero pero espera confirmación laboral..."
+              rows={3}
+              className="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring placeholder:text-muted-foreground/60 leading-relaxed"
+            />
+          </div>
+        </div>
       </section>
 
       {/* Pipeline */}

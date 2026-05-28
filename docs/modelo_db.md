@@ -3,6 +3,7 @@
 ### TABLA: leads
 ### TABLA: acciones_dia
 ### TABLA: recompras
+### TABLA: mensajes_ia
 -
 ### dim_estado_pipeline (VENTA)
 ### dim_estado_recompra
@@ -33,7 +34,12 @@ es_cliente (boolean)
 -- CLV base  
 fecha_ultima_compra  
 cantidad_compras  
-valor_total_cliente (opcional)  
+valor_total_cliente 
+
+-- Agente IA
+punto_interes
+objeciones
+observaciones
 
 ---
 ### TABLA: acciones_dia
@@ -62,6 +68,17 @@ proxima_accion_fecha
 
 activo (boolean)  
 observaciones  
+
+---
+### TABLA: mensajes_ia
+id_mensaje
+id_lead
+tipo
+objetivo
+mensaje
+usado
+feedback
+fecha_creacion
 
 ---
 ## 🧩 DIMENSIONES
@@ -168,6 +185,11 @@ email
 - recompras.id_resultado_recompra → dim_resultado_recompra.id_resultado_recompra  
 - recompras.id_tipo_accion → dim_tipo_accion.id_tipo_accion  
 - dim_resultado_recompra.id_estado_recompra_sugerido → dim_estado_recompra.id_estado_recompra  
+
+---
+
+### Agente IA
+- leads.id_lead → mensajes_ia.id_lead  
 
 ---
 ## ⚙️ LÓGICA SOPORTADA

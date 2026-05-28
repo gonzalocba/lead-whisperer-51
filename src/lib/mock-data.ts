@@ -19,6 +19,9 @@ export interface Lead {
   estimatedDate: string;
   budget: string;
   assignedTo: string;
+  punto_interes?: string[];
+  objeciones?: string[];
+  observaciones?: string;
 }
 
 export const leads: Lead[] = [
