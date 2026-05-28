@@ -8,7 +8,7 @@ const items = [
   { to: "/segmentos", label: "Segmentos", icon: ListChecks },
   { to: "/leads", label: "Lista Leads", icon: Users },
   { to: "/recompra", label: "Recompra", icon: RotateCcw },
-  { to: "/analisis-ia", label: "Análisis IA", icon: Sparkles },
+  { to: "/analisis-ia", label: "Asistente IA", icon: Sparkles },
   { to: "/documentacion", label: "Documentación", icon: FileText },
 ] as const;
 
