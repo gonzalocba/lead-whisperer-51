@@ -111,6 +111,9 @@ async function fetchLeads(): Promise<Lead[]> {
         estimatedDate: d.fecha_estimada || d.estimatedDate || "",
         budget: d.presupuesto || d.budget || "",
         assignedTo: d.vendedor || d.assignedTo || "",
+        punto_interes: Array.isArray(d.punto_interes) ? d.punto_interes : typeof d.punto_interes === 'string' ? [d.punto_interes] : undefined,
+        objeciones: Array.isArray(d.objeciones) ? d.objeciones : typeof d.objeciones === 'string' ? [d.objeciones] : undefined,
+        observaciones: d.observaciones || d.observacion || "",
       };
     });
 
@@ -446,6 +449,66 @@ URL: ${N8N_WEBHOOK_URL}`
             </div>
           )}
         </div>
+
+        {/* ── Resumen IA del Lead (Orientación Comercial IA — Lectura Lineal 5s) ── */}
+        {selectedLead && (
+          <div className="shrink-0 rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3.5 mb-4">
+            {/* Título de sección */}
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground/80">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-500 animate-pulse" />
+              Orientación Comercial IA
+            </div>
+
+            {/* Flujo de lectura lineal y vertical */}
+            <div className="space-y-2 text-xs leading-relaxed text-foreground">
+              <div>
+                <span className="font-semibold text-muted-foreground">Situación:</span>{' '}
+                <span className="font-medium">
+                  {selectedLead.name} muestra interés en {selectedLead.destination}{' '}
+                  {selectedLead.tripType ? `(${selectedLead.tripType} para ${selectedLead.passengers} pax)` : ''}{' '}
+                  {selectedLead.budget ? `con un presupuesto estimado de ${selectedLead.budget}` : ''}.
+                </span>
+                {selectedLead.observaciones && (
+                  <span className="text-muted-foreground italic block mt-1 pl-3 border-l-2 border-border/40">
+                    "{selectedLead.observaciones}"
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-muted-foreground">Riesgo comercial:</span>{' '}
+                {selectedLead.daysInPipeline > 7 ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold inline-flex items-center gap-1">
+                    ⚠️ Enfriamiento ({selectedLead.daysInPipeline} días en pipeline)
+                  </span>
+                ) : (
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold inline-flex items-center gap-1">
+                    ✅ Óptimo / Contacto reciente ({selectedLead.daysInPipeline}d en pipeline)
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <span className="font-semibold text-muted-foreground">Objeciones detectadas:</span>{' '}
+                <span className="font-medium text-foreground">
+                  {selectedLead.objeciones && selectedLead.objeciones.length > 0
+                    ? selectedLead.objeciones.join(', ')
+                    : analysis?.objection || 'Ninguna registrada'}
+                </span>
+              </div>
+            </div>
+
+            {/* Foco Principal: Recomendación IA */}
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 mb-1 flex items-center gap-1">
+                ⚡ ¿Qué hacer ahora? (Recomendación IA)
+              </div>
+              <p className="text-xs font-semibold text-emerald-950 dark:text-emerald-200 leading-relaxed">
+                {analysis?.recommendation || 'Analizando mejor estrategia...'}
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════
             WORKSPACE CHAT
