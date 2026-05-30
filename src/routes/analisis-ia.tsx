@@ -24,9 +24,9 @@ import {
 } from "lucide-react";
 import { useState, useRef, useEffect, useCallback } from "react";
 
-// ─── Webhook n8n (URL de pruebas/test — ideal para depuración en n8n) ───────
+// ─── Webhook n8n (URL de producción) ───────────────────────────────────────────
 const N8N_WEBHOOK_URL =
-  "https://gonzalocba.app.n8n.cloud/webhook-test/asistenteIA";
+  "https://gonzalocba.app.n8n.cloud/webhook/asistenteIA";
 
 // ─── Chips de acción rápida ───────────────────────────────────────────────────
 const QUICK_CHIPS = [
